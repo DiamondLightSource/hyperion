@@ -329,13 +329,12 @@ def rotation_scan(
     yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
 
 
-@bpp.run_decorator()
 def multi_rotation_scan(
     composite: RotationScanComposite,
-    outer_parameters: MultiRotationScan,
+    parameters: MultiRotationScan,
 ) -> MsgGenerator:
     eiger: EigerDetector = composite.eiger
-    eiger.set_detector_parameters(outer_parameters.detector_params)
+    eiger.set_detector_parameters(parameters.detector_params)
     max_vel = (
         yield from bps.rd(composite.smargon.omega.max_velocity) or DEFAULT_MAX_VELOCITY
     )
@@ -343,20 +342,20 @@ def multi_rotation_scan(
     LOGGER.info("setting up sample environment...")
     yield from setup_sample_environment(
         composite.aperture_scatterguard,
-        outer_parameters.selected_aperture,
+        parameters.selected_aperture,
         composite.detector_motion,
         composite.backlight,
         composite.attenuator,
-        outer_parameters.transmission_frac,
-        outer_parameters.detector_params.detector_distance,
+        parameters.transmission_frac,
+        parameters.detector_params.detector_distance,
     )
 
     @bpp.set_run_key_decorator("multi_rotation_scan")
     @bpp.run_decorator(
         md={
             "subplan_name": CONST.PLAN.ROTATION_MULTI,
-            "full_num_of_images": outer_parameters.num_images,
-            "meta_data_run_number": outer_parameters.detector_params.run_number,
+            "full_num_of_images": parameters.num_images,
+            "meta_data_run_number": parameters.detector_params.run_number,
             "activate_callbacks": [
                 "RotationISPyBCallback",
                 "RotationNexusFileCallback",
@@ -366,7 +365,7 @@ def multi_rotation_scan(
     @bpp.stage_decorator([eiger])
     @bpp.finalize_decorator(lambda: cleanup_plan(composite, max_vel))
     def _multi_rotation_scan():
-        for single_scan in outer_parameters.single_rotation_scans:
+        for single_scan in parameters.single_rotation_scans:
 
             @bpp.set_run_key_decorator("rotation_scan")
             @bpp.run_decorator(  # attach experiment metadata to the start document
