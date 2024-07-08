@@ -130,9 +130,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
         )
 
         motor_positions = [
-            doc["data"]["smargon_x"],
-            doc["data"]["smargon_y"],
-            doc["data"]["smargon_z"],
+            doc["data"]["smargon-x"],
+            doc["data"]["smargon-y"],
+            doc["data"]["smargon-z"],
         ]
         assert (
             self.params
