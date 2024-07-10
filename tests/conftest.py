@@ -17,6 +17,7 @@ from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
+from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.devices.aperturescatterguard import (
     ApertureFiveDimensionalLocation,
     AperturePositions,
@@ -262,29 +263,26 @@ def eiger(done_status):
 
 
 @pytest.fixture
-def smargon() -> Generator[Smargon, None, None]:
+def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     smargon = i03.smargon(fake_with_ophyd_sim=True)
-    smargon.x.user_setpoint._use_limits = False
-    smargon.y.user_setpoint._use_limits = False
-    smargon.z.user_setpoint._use_limits = False
-    smargon.omega.user_setpoint._use_limits = False
-    smargon.omega.velocity._use_limits = False
-
     # Initial positions, needed for stub_offsets
-    smargon.stub_offsets.center_at_current_position.disp.sim_put(0)  # type: ignore
-    smargon.x.user_readback.sim_put(0.0)  # type: ignore
-    smargon.y.user_readback.sim_put(0.0)  # type: ignore
-    smargon.z.user_readback.sim_put(0.0)  # type: ignore
+    set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
+    set_mock_value(smargon.x.user_readback, 0.0)
+    set_mock_value(smargon.y.user_readback, 0.0)
+    set_mock_value(smargon.z.user_readback, 0.0)
+    set_mock_value(smargon.x.high_limit_travel, 2)
+    set_mock_value(smargon.x.low_limit_travel, -2)
 
     with (
-        patch_motor(smargon.omega),
-        patch_motor(smargon.x),
-        patch_motor(smargon.y),
-        patch_motor(smargon.z),
-        patch_motor(smargon.chi),
-        patch_motor(smargon.phi),
+        patch_async_motor(smargon.omega),
+        patch_async_motor(smargon.x),
+        patch_async_motor(smargon.y),
+        patch_async_motor(smargon.z),
+        patch_async_motor(smargon.chi),
+        patch_async_motor(smargon.phi),
     ):
         yield smargon
+    clear_devices()
 
 
 @pytest.fixture
@@ -560,13 +558,7 @@ def fake_create_rotation_devices(
     robot: BartRobot,
     done_status,
 ):
-    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
-    mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
-
-    smargon.omega.velocity.set = mock_omega_velocity_sets
-    smargon.omega.set = mock_omega_sets
-
-    smargon.omega.max_velocity.sim_put(131)  # type: ignore
+    set_mock_value(smargon.omega.max_velocity, 131)
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -711,7 +703,7 @@ async def fake_fgs_composite(
     fake_composite.zocalo.timeout_s = 3
     set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
     set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
-    fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
+    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     set_mock_value(fake_composite.robot.barcode, "BARCODE")
 

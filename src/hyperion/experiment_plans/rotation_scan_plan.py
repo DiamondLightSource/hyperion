@@ -279,7 +279,9 @@ def rotation_scan(
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationScan,
     ):
-        motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
+        motor_time_to_speed = yield from bps.rd(
+            composite.smargon.omega.acceleration_time
+        )
         max_vel = (
             yield from bps.rd(composite.smargon.omega.max_velocity)
             or DEFAULT_MAX_VELOCITY

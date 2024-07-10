@@ -42,9 +42,9 @@ BASIC_PRE_SETUP_DOC = {
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
-    "smargon_x": 10.0,
-    "smargon_y": 20.0,
-    "smargon_z": 30.0,
+    "smargon-x": 10.0,
+    "smargon-y": 20.0,
+    "smargon-z": 30.0,
 }
 
 BASIC_POST_SETUP_DOC = {

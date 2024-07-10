@@ -124,9 +124,9 @@ class RotationISPyBCallback(BaseISPyBCallback):
         """Use the hardware read values to create the ispyb comment"""
         scan_data_infos = super()._handle_ispyb_hardware_read(doc)
         motor_positions = [
-            doc["data"]["smargon_x"],
-            doc["data"]["smargon_y"],
-            doc["data"]["smargon_z"],
+            doc["data"]["smargon-x"],
+            doc["data"]["smargon-y"],
+            doc["data"]["smargon-z"],
         ]
         assert (
             self.params

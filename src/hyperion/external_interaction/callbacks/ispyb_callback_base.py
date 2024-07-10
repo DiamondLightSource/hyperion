@@ -111,9 +111,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
         )
         hwscan_position_info = DataCollectionPositionInfo(
-            pos_x=doc["data"]["smargon_x"],
-            pos_y=doc["data"]["smargon_y"],
-            pos_z=doc["data"]["smargon_z"],
+            pos_x=doc["data"]["smargon-x"],
+            pos_y=doc["data"]["smargon-y"],
+            pos_z=doc["data"]["smargon-z"],
         )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, hwscan_position_info, self.params
@@ -127,11 +127,13 @@ class BaseISPyBCallback(PlanReactiveCallback):
             **doc["data"]["aperture_scatterguard-selected_aperture"]
         )
         beamsize = beam_size_from_aperture(aperture_size)
+        beamsize_x_mm = beamsize.x_um / 1000 if beamsize.x_um else None
+        beamsize_y_mm = beamsize.y_um / 1000 if beamsize.y_um else None
         hwscan_data_collection_info = DataCollectionInfo(
-            beamsize_at_samplex=beamsize.x_um,
-            beamsize_at_sampley=beamsize.y_um,
-            focal_spot_size_at_samplex=beamsize.x_um,
-            focal_spot_size_at_sampley=beamsize.y_um,
+            beamsize_at_samplex=beamsize_x_mm,
+            beamsize_at_sampley=beamsize_y_mm,
+            focal_spot_size_at_samplex=beamsize_x_mm,
+            focal_spot_size_at_sampley=beamsize_y_mm,
             flux=doc["data"]["flux_flux_reading"],
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:
