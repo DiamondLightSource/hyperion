@@ -100,10 +100,10 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
-                "focal_spot_size_at_samplex": 50.0,
-                "focal_spot_size_at_sampley": 20.0,
-                "beamsize_at_samplex": 50.0,
-                "beamsize_at_sampley": 20.0,
+                "focal_spot_size_at_samplex": 0.05,
+                "focal_spot_size_at_sampley": 0.02,
+                "beamsize_at_samplex": 0.05,
+                "beamsize_at_sampley": 0.02,
             },
         )
         assert_upsert_call_with(
@@ -116,10 +116,10 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
-                "focal_spot_size_at_samplex": 50.0,
-                "focal_spot_size_at_sampley": 20.0,
-                "beamsize_at_samplex": 50.0,
-                "beamsize_at_sampley": 20.0,
+                "focal_spot_size_at_samplex": 0.05,
+                "focal_spot_size_at_sampley": 0.02,
+                "beamsize_at_samplex": 0.05,
+                "beamsize_at_sampley": 0.02,
             },
         )
 
