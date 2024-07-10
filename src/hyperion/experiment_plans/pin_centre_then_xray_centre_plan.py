@@ -18,6 +18,7 @@ from hyperion.experiment_plans.pin_tip_centring_plan import (
     pin_tip_centre_plan,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import (
     GridScanWithEdgeDetect,
     PinTipCentreThenXrayCentre,
@@ -93,4 +94,5 @@ def pin_tip_centre_then_xray_centre(
         composite.detector_motion,
         parameters.detector_params.detector_distance,
         pin_centre_then_xray_centre_plan(composite, parameters, oav_config_file),
+        group=CONST.WAIT.GRID_READY_FOR_DC,
     )

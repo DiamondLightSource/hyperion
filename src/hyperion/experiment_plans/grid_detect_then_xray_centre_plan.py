@@ -49,6 +49,7 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
     ispyb_activation_wrapper,
 )
 from hyperion.log import LOGGER
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
@@ -156,7 +157,7 @@ def _detect_grid_and_do_gridscan(
     yield from move_aperture_if_required(
         composite.aperture_scatterguard,
         parameters.selected_aperture,
-        group="ready_for_data_collection",
+        group=CONST.WAIT.GRID_READY_FOR_DC,
     )
 
     yield from flyscan_xray_centre(
@@ -212,4 +213,5 @@ def grid_detect_then_xray_centre(
         composite.detector_motion,
         parameters.detector_params.detector_distance,
         plan_to_perform,
+        group=CONST.WAIT.GRID_READY_FOR_DC,
     )
