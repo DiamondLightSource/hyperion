@@ -42,18 +42,18 @@ BASIC_PRE_SETUP_DOC = {
     "synchrotron-synchrotron_mode": SynchrotronMode.USER,
     "s4_slit_gaps_xgap": 0,
     "s4_slit_gaps_ygap": 0,
-    "aperture_scatterguard-selected_aperture": {
-        "name": "Robot_load",
-        "GDA_name": "ROBOT_LOAD",
-        "radius_microns": None,
-        "location": (15, 16, 2, 18, 19),
-    },
     "smargon-x": 10.0,
     "smargon-y": 20.0,
     "smargon-z": 30.0,
 }
 
 BASIC_POST_SETUP_DOC = {
+    "aperture_scatterguard-selected_aperture": {
+        "name": "Robot_load",
+        "GDA_name": "ROBOT_LOAD",
+        "radius_microns": None,
+        "location": (15, 16, 2, 18, 19),
+    },
     "attenuator-actual_transmission": 0,
     "flux_flux_reading": 10,
     "dcm-energy_in_kev": 11.105,

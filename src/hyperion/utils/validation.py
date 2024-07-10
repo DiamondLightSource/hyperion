@@ -64,7 +64,10 @@ def fake_rotation_scan(
     )
     def plan():
         yield from read_hardware_for_ispyb_during_collection(
-            rotation_devices.attenuator, rotation_devices.flux, rotation_devices.dcm
+            rotation_devices.aperture_scatterguard,
+            rotation_devices.attenuator,
+            rotation_devices.flux,
+            rotation_devices.dcm,
         )
         yield from read_hardware_for_nexus_writer(rotation_devices.eiger)
 

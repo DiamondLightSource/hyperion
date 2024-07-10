@@ -86,6 +86,12 @@ class TestData:
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 2666604299.928203,
         "data": {
+            "aperture_scatterguard-selected_aperture": {
+                "name": "Medium",
+                "GDA_name": "MEDIUM",
+                "radius_microns": 50,
+                "location": (15, 16, 2, 18, 19),
+            },
             "attenuator-actual_transmission": 0.98,
             "flux_flux_reading": 9.81,
             "dcm-energy_in_kev": 11.105,
@@ -209,12 +215,6 @@ class TestData:
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator-current_gap": 1.234,
-            "aperture_scatterguard-selected_aperture": {
-                "name": "Medium",
-                "GDA_name": "MEDIUM",
-                "radius_microns": 50,
-                "location": (15, 16, 2, 18, 19),
-            },
             "smargon-x": 10.0,
             "smargon-y": 20.0,
             "smargon-z": 30.0,
@@ -228,6 +228,12 @@ class TestData:
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 2666604299.928203,
         "data": {
+            "aperture_scatterguard-selected_aperture": {
+                "name": "Medium",
+                "GDA_name": "MEDIUM",
+                "radius_microns": 50,
+                "location": (15, 16, 2, 18, 19),
+            },
             "attenuator-actual_transmission": 1,
             "flux_flux_reading": 10,
             "dcm-energy_in_kev": 11.105,

@@ -11,6 +11,7 @@ from hyperion.experiment_plans.pin_centre_then_xray_centre_plan import (
     pin_centre_then_xray_centre_plan,
     pin_tip_centre_then_xray_centre,
 )
+from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import PinTipCentreThenXrayCentre
 
 from ...conftest import raw_params_from_file
@@ -116,7 +117,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         )
 
     sim_run_engine.add_wait_handler(
-        add_handlers_to_simulate_detector_motion, "ready_for_data_collection"
+        add_handlers_to_simulate_detector_motion, CONST.WAIT.GRID_READY_FOR_DC
     )
 
     messages = sim_run_engine.simulate_plan(
@@ -131,14 +132,14 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         messages, lambda msg: msg.obj is simple_beamline.detector_motion.z
     )
     assert messages[0].args[0] == 100
-    assert messages[0].kwargs["group"] == "ready_for_data_collection"
+    assert messages[0].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
     assert messages[1].obj is simple_beamline.detector_motion.shutter
     assert messages[1].args[0] == 1
-    assert messages[1].kwargs["group"] == "ready_for_data_collection"
+    assert messages[1].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
     messages = sim_run_engine.assert_message_and_return_remaining(
         messages[2:],
         lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == "ready_for_data_collection",
+        and msg.kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC,
     )
     sim_run_engine.assert_message_and_return_remaining(
         messages[2:],
