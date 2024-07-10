@@ -35,7 +35,7 @@ async def test_getting_data_for_ispyb():
     await attenuator.connect()
     flux.wait_for_connection()
     await aperture_scatterguard.connect()
-    smargon.wait_for_connection()
+    await smargon.connect()
     robot = i03.robot(fake_with_ophyd_sim=True)
 
     RE = RunEngine()
