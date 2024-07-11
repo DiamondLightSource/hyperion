@@ -3,8 +3,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-from dodal.devices.aperturescatterguard import SingleAperturePosition
-
 from hyperion.external_interaction.callbacks.common.ispyb_mapping import (
     populate_data_collection_group,
     populate_remaining_data_collection_info,
@@ -60,7 +58,7 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def activity_gated_start(self, doc: RunStart):
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
             ISPYB_LOGGER.info(
-                "ISPyB callback recieved start document with experiment parameters."
+                "ISPyB callback received start document with experiment parameters."
             )
             self.params = RotationScan.from_json(doc.get("hyperion_parameters"))
             dcgid = (
@@ -125,26 +123,48 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def _handle_ispyb_hardware_read(self, doc: Event):
         """Use the hardware read values to create the ispyb comment"""
         scan_data_infos = super()._handle_ispyb_hardware_read(doc)
-        aperture_size = SingleAperturePosition(
-            **doc["data"]["aperture_scatterguard-selected_aperture"]
-        )
-
         motor_positions = [
-            doc["data"]["smargon_x"],
-            doc["data"]["smargon_y"],
-            doc["data"]["smargon_z"],
+            doc["data"]["smargon-x"],
+            doc["data"]["smargon-y"],
+            doc["data"]["smargon-z"],
         ]
         assert (
             self.params
         ), "handle_ispyb_hardware_read triggered beore activity_gated_start"
-        comment = f"Sample position: ({motor_positions[0]}, {motor_positions[1]}, {motor_positions[2]}) {self.params.comment} Aperture: {aperture_size.name}"
+        comment = f"Sample position: ({motor_positions[0]}, {motor_positions[1]}, {motor_positions[2]}) {self.params.comment} "
         scan_data_infos[0].data_collection_info.comments = comment
         return scan_data_infos
 
     def activity_gated_event(self, doc: Event):
         doc = super().activity_gated_event(doc)
         set_dcgid_tag(self.ispyb_ids.data_collection_group_id)
+
+        descriptor_name = self.descriptors[doc["descriptor"]].get("name")
+        if descriptor_name == CONST.DESCRIPTORS.OAV_ROTATION_SNAPSHOT_TRIGGERED:
+            scan_data_infos = self._handle_oav_rotation_snapshot_triggered(doc)
+            self.ispyb_ids = self.ispyb.update_deposition(
+                self.ispyb_ids, scan_data_infos
+            )
+
         return doc
+
+    def _handle_oav_rotation_snapshot_triggered(self, doc) -> Sequence[ScanDataInfo]:
+        assert self.ispyb_ids.data_collection_ids, "No current data collection"
+        assert self.params, "ISPyB handler didn't receive parameters!"
+        data = doc["data"]
+        self._oav_snapshot_event_idx += 1
+        data_collection_info = DataCollectionInfo(
+            **{
+                f"xtal_snapshot{self._oav_snapshot_event_idx}": data.get(
+                    "oav_snapshot_last_saved_path"
+                )
+            }
+        )
+        scan_data_info = ScanDataInfo(
+            data_collection_id=self.ispyb_ids.data_collection_ids[-1],
+            data_collection_info=data_collection_info,
+        )
+        return [scan_data_info]
 
     def activity_gated_stop(self, doc: RunStop) -> RunStop:
         if doc.get("run_start") == self.uid_to_finalize_on:

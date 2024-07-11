@@ -3,12 +3,11 @@ import json
 import os
 import shutil
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import bluesky.preprocessors as bpp
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -65,7 +64,10 @@ def fake_rotation_scan(
     )
     def plan():
         yield from read_hardware_for_ispyb_during_collection(
-            rotation_devices.attenuator, rotation_devices.flux, rotation_devices.dcm
+            rotation_devices.aperture_scatterguard,
+            rotation_devices.attenuator,
+            rotation_devices.flux,
+            rotation_devices.dcm,
         )
         yield from read_hardware_for_nexus_writer(rotation_devices.eiger)
 
@@ -86,13 +88,8 @@ def fake_create_rotation_devices():
     s4_slit_gaps = i03.s4_slit_gaps(fake_with_ophyd_sim=True)
     dcm = i03.dcm(fake_with_ophyd_sim=True)
     robot = i03.robot(fake_with_ophyd_sim=True)
-    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
-    mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
 
-    smargon.omega.velocity.set = mock_omega_velocity_sets
-    smargon.omega.set = mock_omega_sets
-
-    smargon.omega.max_velocity.sim_put(131)  # type: ignore
+    set_mock_value(smargon.omega.max_velocity, 131)
 
     set_mock_value(dcm.energy_in_kev.user_readback, 12700)
 

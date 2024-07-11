@@ -10,13 +10,14 @@ from dodal.devices.oav.pin_image_recognition import PinTipDetection
 from dodal.devices.oav.pin_image_recognition.utils import SampleLocation
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
+from ophyd_async.core import get_mock_put, set_mock_value
 
+from hyperion.device_setup_plans.smargon import move_smargon_warn_on_out_of_range
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.pin_tip_centring_plan import (
     DEFAULT_STEP_SIZE,
     PinTipCentringComposite,
     move_pin_into_view,
-    move_smargon_warn_on_out_of_range,
     pin_tip_centre_plan,
     trigger_and_return_pin_tip,
 )
@@ -40,15 +41,15 @@ def mock_pin_tip(pin_tip: PinTipDetection):
 async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_tip_returned_and_smargon_not_moved(
     smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
 ):
-    smargon.x.user_readback.sim_put(0)  # type: ignore
-    await mock_pin_tip.triggered_tip._backend.put((100, 200))
+    set_mock_value(smargon.x.user_readback, 0)
+    await mock_pin_tip.triggered_tip._backend.put((100, 200))  # type: ignore
 
     mock_pin_tip.trigger = MagicMock(return_value=NullStatus())
 
     result = RE(move_pin_into_view(mock_pin_tip, smargon))
 
     mock_pin_tip.trigger.assert_called_once()
-    assert smargon.x.user_readback.get() == 0
+    assert await smargon.x.user_readback.get_value() == 0
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
 
@@ -57,20 +58,23 @@ async def test_given_the_pin_tip_is_already_in_view_when_get_tip_into_view_then_
 async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_smargon_moved_positive_and_tip_returned(
     smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
     await mock_pin_tip.validity_timeout._backend.put(0.015)
-    smargon.x.user_readback.sim_put(0)  # type: ignore
+    set_mock_value(smargon.x.user_readback, 0)
 
-    def set_pin_tip_when_x_moved(*args, **kwargs):
-        mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(
+    def set_pin_tip_when_x_moved(f, *args, **kwargs):
+        mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(  # type: ignore
             100, 200, *FAKE_EDGE_ARRAYS
         )
+        return f(*args, **kwargs)
 
-    smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
+    x_user_setpoint = get_mock_put(smargon.x.user_setpoint)
+    x_user_setpoint.side_effect = partial(
+        set_pin_tip_when_x_moved, x_user_setpoint.side_effect
+    )
 
     result = RE(move_pin_into_view(mock_pin_tip, smargon))
 
-    assert smargon.x.user_readback.get() == DEFAULT_STEP_SIZE
+    assert await smargon.x.user_readback.get_value() == DEFAULT_STEP_SIZE
     assert isinstance(result, RunEngineResult)
     assert result.plan_result == (100, 200)
 
@@ -79,24 +83,27 @@ async def test_given_no_tip_found_but_will_be_found_when_get_tip_into_view_then_
 async def test_given_tip_at_zero_but_will_be_found_when_get_tip_into_view_then_smargon_moved_negative_and_tip_returned(
     smargon: Smargon, oav: OAV, RE: RunEngine, mock_pin_tip: PinTipDetection
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
     mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(
         0, 100, *FAKE_EDGE_ARRAYS
     )
     await mock_pin_tip.validity_timeout._backend.put(0.15)
 
-    smargon.x.user_readback.sim_put(0)  # type: ignore
+    set_mock_value(smargon.x.user_readback, 0)
 
-    def set_pin_tip_when_x_moved(*args, **kwargs):
-        mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(
+    def set_pin_tip_when_x_moved(f, *args, **kwargs):
+        mock_pin_tip._get_tip_and_edge_data.return_value = SampleLocation(  # type: ignore
             100, 200, *FAKE_EDGE_ARRAYS
         )
+        return f(*args, **kwargs)
 
-    smargon.x.subscribe(set_pin_tip_when_x_moved, run=False)
+    x_user_setpoint = get_mock_put(smargon.x.user_setpoint)
+    x_user_setpoint.side_effect = partial(
+        set_pin_tip_when_x_moved, x_user_setpoint.side_effect
+    )
 
     result = RE(move_pin_into_view(mock_pin_tip, smargon))
 
-    assert smargon.x.user_readback.get() == -DEFAULT_STEP_SIZE
+    assert await smargon.x.user_readback.get_value() == -DEFAULT_STEP_SIZE
     assert result.plan_result == (100, 200)  # type: ignore
 
 
@@ -124,7 +131,7 @@ def test_trigger_and_return_pin_tip_works_for_ophyd_pin_tip_detection(
 
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip")
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
-def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
+async def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
     mock_trigger_and_return_tip: MagicMock,
     smargon: Smargon,
     oav: OAV,
@@ -136,19 +143,18 @@ def test_pin_tip_starting_near_negative_edge_doesnt_exceed_limit(
         get_fake_pin_values_generator(0, 100),
     ]
 
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
-    smargon.x.user_setpoint.sim_put(-1.8)  # type: ignore
-    smargon.x.user_readback.sim_put(-1.8)  # type: ignore
+    set_mock_value(smargon.x.user_setpoint, -1.8)
+    set_mock_value(smargon.x.user_readback, -1.8)
 
     with pytest.raises(WarningException):
         RE(move_pin_into_view(pin_tip, smargon, max_steps=1))
 
-    assert smargon.x.user_readback.get() == -2
+    assert await smargon.x.user_readback.get_value() == -2
 
 
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.trigger_and_return_pin_tip")
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
-def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
+async def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
     mock_trigger_and_return_pin_tip: MagicMock,
     smargon: Smargon,
     oav: OAV,
@@ -159,36 +165,34 @@ def test_pin_tip_starting_near_positive_edge_doesnt_exceed_limit(
         get_fake_pin_values_generator(None, None),
         get_fake_pin_values_generator(None, None),
     ]
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
-    smargon.x.user_setpoint.sim_put(1.8)  # type: ignore
-    smargon.x.user_readback.sim_put(1.8)  # type: ignore
+    set_mock_value(smargon.x.user_setpoint, 1.8)
+    set_mock_value(smargon.x.user_readback, 1.8)
 
     with pytest.raises(WarningException):
         RE(move_pin_into_view(pin_tip, smargon, max_steps=1))
 
-    assert smargon.x.user_readback.get() == 2
+    assert await smargon.x.user_readback.get_value() == 2
 
 
 @patch("hyperion.experiment_plans.pin_tip_centring_plan.bps.sleep", new=MagicMock())
 async def test_given_no_tip_found_ever_when_get_tip_into_view_then_smargon_moved_positive_and_exception_thrown(
     smargon: Smargon, oav: OAV, RE: RunEngine, pin_tip: PinTipDetection
 ):
-    smargon.x.user_setpoint.sim_set_limits([-2, 2])  # type: ignore
     await pin_tip.triggered_tip._backend.put(pin_tip.INVALID_POSITION)
     await pin_tip.validity_timeout._backend.put(0.01)
 
-    smargon.x.user_readback.sim_put(0)  # type: ignore
+    set_mock_value(smargon.x.user_readback, 0)
 
     with pytest.raises(WarningException):
         RE(move_pin_into_view(pin_tip, smargon))
 
-    assert smargon.x.user_readback.get() == 1
+    assert await smargon.x.user_readback.get_value() == 1
 
 
 def test_given_moving_out_of_range_when_move_with_warn_called_then_warning_exception(
     RE: RunEngine, smargon: Smargon
 ):
-    smargon.x.high_limit_travel.sim_put(10)  # type: ignore
+    set_mock_value(smargon.x.high_limit_travel, 10)
 
     with pytest.raises(WarningException):
         RE(move_smargon_warn_on_out_of_range(smargon, (100, 0, 0)))
@@ -220,7 +224,7 @@ def return_pixel(pixel, *args):
     "hyperion.experiment_plans.pin_tip_centring_plan.move_smargon_warn_on_out_of_range",
     autospec=True,
 )
-def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
+async def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     move_smargon,
     mock_sleep,
     mock_setup_oav,
@@ -229,7 +233,7 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     test_config_files,
     RE,
 ):
-    smargon.omega.user_readback.sim_put(0)  # type: ignore
+    set_mock_value(smargon.omega.user_readback, 0)
     mock_oav: OAV = MagicMock(spec=OAV)
     mock_oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]
@@ -251,7 +255,7 @@ def test_when_pin_tip_centre_plan_called_then_expected_plans_called(
     args, _ = get_move.call_args_list[0]
     assert args[1] == (117, 100)
 
-    assert smargon.omega.user_readback.get() == 90
+    assert await smargon.omega.user_readback.get_value() == 90
 
     args, _ = get_move.call_args_list[1]
     assert args[1] == (217, 200)
@@ -287,7 +291,7 @@ def test_given_pin_tip_detect_using_ophyd_when_pin_tip_centre_plan_called_then_e
     test_config_files,
     RE,
 ):
-    smargon.omega.user_readback.sim_put(0)  # type: ignore
+    set_mock_value(smargon.omega.user_readback, 0)
     mock_oav: OAV = MagicMock(spec=OAV)
     mock_oav.parameters = OAVConfigParams(
         test_config_files["zoom_params_file"], test_config_files["display_config"]

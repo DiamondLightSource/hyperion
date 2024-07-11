@@ -17,6 +17,7 @@ from pydantic import BaseModel, Extra, Field, root_validator, validator
 from scanspec.core import AxesPoints
 from semver import Version
 
+from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     IspybParams,
 )
@@ -116,15 +117,16 @@ class HyperionParameters(BaseModel):
     def __hash__(self) -> int:
         return self.json().__hash__()
 
+    features: FeatureFlags = Field(default=FeatureFlags())
     parameter_model_version: ParameterVersion
 
     @validator("parameter_model_version")
     def _validate_version(cls, version: ParameterVersion):
-        assert version >= ParameterVersion(
-            major=PARAMETER_VERSION.major
+        assert (
+            version >= ParameterVersion(major=PARAMETER_VERSION.major)
         ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
-        assert version <= ParameterVersion(
-            major=PARAMETER_VERSION.major + 1
+        assert (
+            version <= ParameterVersion(major=PARAMETER_VERSION.major + 1)
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 

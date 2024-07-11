@@ -26,6 +26,5 @@
     "z2_start_um": 0.0,
     "detector_distance_mm": 100.0,
     "omega_start_deg": 0.0,
-    "exposure_time_s": 0.1,
-    "set_stub_offsets": true
+    "exposure_time_s": 0.1
 }

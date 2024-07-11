@@ -63,7 +63,10 @@ def fake_rotation_scan(
     )
     def plan():
         yield from read_hardware_for_ispyb_during_collection(
-            rotation_devices.attenuator, rotation_devices.flux, rotation_devices.dcm
+            rotation_devices.aperture_scatterguard,
+            rotation_devices.attenuator,
+            rotation_devices.flux,
+            rotation_devices.dcm,
         )
         yield from read_hardware_for_nexus_writer(rotation_devices.eiger)
 
@@ -110,6 +113,7 @@ def test_rotation_scan_nexus_output_compared_to_existing_full_compare(
     fake_create_rotation_devices: RotationScanComposite,
 ):
     test_params.chi_start_deg = 0
+    test_params.phi_start_deg = 0
     run_number = test_params.detector_params.run_number
     nexus_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}.nxs"
     master_filename = f"{tmpdir}/{TEST_FILENAME}_{run_number}_master.h5"

@@ -210,7 +210,6 @@ def rotation_scan_plan(
         yield from bps.wait("setup_senv")
         yield from bps.wait("move_gonio_to_start")
         yield from bps.wait("move_to_rotation_start")
-        yield from bps.wait("setup_zebra")
 
         # get some information for the ispyb deposition and trigger the callback
         yield from read_hardware_for_zocalo(composite.eiger)
@@ -219,19 +218,18 @@ def rotation_scan_plan(
             composite.undulator,
             composite.synchrotron,
             composite.s4_slit_gaps,
-            composite.aperture_scatterguard,
             composite.robot,
             composite.smargon,
         )
-        yield from read_hardware_for_ispyb_during_collection(
-            composite.attenuator, composite.flux, composite.dcm
-        )
+
         yield from read_hardware_for_nexus_writer(composite.eiger)
 
         # Get ready for the actual scan
         yield from bps.abs_set(
             axis.velocity, motion_values.speed_for_rotation_deg_s, wait=True
         )
+
+        yield from bps.wait("setup_zebra")
         yield from arm_zebra(composite.zebra)
 
         # Check topup gate
@@ -243,6 +241,13 @@ def rotation_scan_plan(
 
         LOGGER.info("Executing rotation scan")
         yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
+
+        yield from read_hardware_for_ispyb_during_collection(
+            composite.aperture_scatterguard,
+            composite.attenuator,
+            composite.flux,
+            composite.dcm,
+        )
 
     yield from _rotation_scan_plan(motion_values, composite)
 
@@ -274,7 +279,9 @@ def rotation_scan(
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationScan,
     ):
-        motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration)
+        motor_time_to_speed = yield from bps.rd(
+            composite.smargon.omega.acceleration_time
+        )
         max_vel = (
             yield from bps.rd(composite.smargon.omega.max_velocity)
             or DEFAULT_MAX_VELOCITY

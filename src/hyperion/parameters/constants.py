@@ -35,6 +35,13 @@ class PlanNameConstants:
 
 
 @dataclass(frozen=True)
+class PlanGroupCheckpointConstants:
+    # For places to synchronise / stop and wait in plans, use as bluesky group names
+    # Gridscan
+    GRID_READY_FOR_DC = "ready_for_data_collection"
+
+
+@dataclass(frozen=True)
 class DocDescriptorNames:
     # Robot load event descriptor
     ROBOT_LOAD = "robot_load"
@@ -97,6 +104,7 @@ class I03Constants:
     SHUTTER_TIME_S = 0.06
     USE_PANDA_FOR_GRIDSCAN = False
     USE_GPU_FOR_GRIDSCAN_ANALYSIS = False
+    THAWING_TIME = 20
 
 
 @dataclass(frozen=True)
@@ -105,10 +113,12 @@ class HyperionConstants:
     I03 = I03Constants()
     PARAM = ExperimentParamConstants()
     PLAN = PlanNameConstants()
+    WAIT = PlanGroupCheckpointConstants()
     SIM = SimConstants()
     TRIGGER = TriggerConstants()
     CALLBACK_0MQ_PROXY_PORTS = (5577, 5578)
     DESCRIPTORS = DocDescriptorNames()
+    CONFIG_SERVER_URL = "https://daq-config.diamond.ac.uk/api"
     GRAYLOG_PORT = 12232
     PARAMETER_SCHEMA_DIRECTORY = "src/hyperion/parameters/schemas/"
     ZOCALO_ENV = "dev_artemis" if TEST_MODE else "artemis"

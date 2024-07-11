@@ -17,6 +17,7 @@ from dodal.common.beamlines import beamline_utils
 from dodal.common.beamlines.beamline_parameters import (
     GDABeamlineParameters,
 )
+from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.devices.aperturescatterguard import (
     ApertureFiveDimensionalLocation,
     AperturePositions,
@@ -36,6 +37,7 @@ from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
+from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
 from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
@@ -44,9 +46,10 @@ from dodal.log import set_up_all_logging_handlers
 from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import NullStatus
 from ophyd.status import Status
-from ophyd_async.core import callback_on_mock_put, set_mock_value
+from ophyd_async.core import Device, DeviceVector, callback_on_mock_put, set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
 from ophyd_async.epics.motion.motor import Motor
+from ophyd_async.epics.signal import epics_signal_rw
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -57,6 +60,7 @@ from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
 from hyperion.external_interaction.callbacks.logging_callback import (
     VerbosePlanExecutionLoggingCallback,
 )
+from hyperion.external_interaction.config_server import FeatureFlags
 from hyperion.log import (
     ALL_LOGGERS,
     ISPYB_LOGGER,
@@ -259,29 +263,26 @@ def eiger(done_status):
 
 
 @pytest.fixture
-def smargon() -> Generator[Smargon, None, None]:
+def smargon(RE: RunEngine) -> Generator[Smargon, None, None]:
     smargon = i03.smargon(fake_with_ophyd_sim=True)
-    smargon.x.user_setpoint._use_limits = False
-    smargon.y.user_setpoint._use_limits = False
-    smargon.z.user_setpoint._use_limits = False
-    smargon.omega.user_setpoint._use_limits = False
-    smargon.omega.velocity._use_limits = False
-
     # Initial positions, needed for stub_offsets
-    smargon.stub_offsets.center_at_current_position.disp.sim_put(0)  # type: ignore
-    smargon.x.user_readback.sim_put(0.0)  # type: ignore
-    smargon.y.user_readback.sim_put(0.0)  # type: ignore
-    smargon.z.user_readback.sim_put(0.0)  # type: ignore
+    set_mock_value(smargon.stub_offsets.center_at_current_position.disp, 0)
+    set_mock_value(smargon.x.user_readback, 0.0)
+    set_mock_value(smargon.y.user_readback, 0.0)
+    set_mock_value(smargon.z.user_readback, 0.0)
+    set_mock_value(smargon.x.high_limit_travel, 2)
+    set_mock_value(smargon.x.low_limit_travel, -2)
 
     with (
-        patch_motor(smargon.omega),
-        patch_motor(smargon.x),
-        patch_motor(smargon.y),
-        patch_motor(smargon.z),
-        patch_motor(smargon.chi),
-        patch_motor(smargon.phi),
+        patch_async_motor(smargon.omega),
+        patch_async_motor(smargon.x),
+        patch_async_motor(smargon.y),
+        patch_async_motor(smargon.z),
+        patch_async_motor(smargon.chi),
+        patch_async_motor(smargon.phi),
     ):
         yield smargon
+    clear_devices()
 
 
 @pytest.fixture
@@ -445,6 +446,11 @@ def webcam(RE) -> Generator[Webcam, Any, Any]:
 
 
 @pytest.fixture
+def thawer(RE) -> Generator[Thawer, Any, Any]:
+    yield i03.thawer(fake_with_ophyd_sim=True)
+
+
+@pytest.fixture
 def aperture_scatterguard(RE):
     AperturePositions.LARGE = SingleAperturePosition(
         location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
@@ -552,13 +558,7 @@ def fake_create_rotation_devices(
     robot: BartRobot,
     done_status,
 ):
-    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
-    mock_omega_velocity_sets = MagicMock(return_value=Status(done=True, success=True))
-
-    smargon.omega.velocity.set = mock_omega_velocity_sets
-    smargon.omega.set = mock_omega_sets
-
-    smargon.omega.max_velocity.sim_put(131)  # type: ignore
+    set_mock_value(smargon.omega.max_velocity, 131)
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -585,6 +585,54 @@ def zocalo(done_status):
     return zoc
 
 
+@pytest.fixture
+async def panda():
+    class MockBlock(Device):
+        def __init__(
+            self, prefix: str, name: str = "", attributes: dict[str, Any] = {}
+        ):
+            for name, dtype in attributes.items():
+                setattr(self, name, epics_signal_rw(dtype, "", ""))
+
+    def mock_vector_block(n, attributes):
+        return DeviceVector(
+            {i: MockBlock(f"{i}", f"{i}", attributes) for i in range(n)}
+        )
+
+    async def set_mock_blocks(
+        panda, mock_blocks: dict[str, tuple[int, dict[str, Any]]]
+    ):
+        for name, block in mock_blocks.items():
+            n, attrs = block
+            block = mock_vector_block(n, attrs)
+            await block.connect(mock=True)
+            setattr(panda, name, block)
+
+    async def create_mock_signals(devices_and_signals: dict[Device, dict[str, Any]]):
+        for device, signals in devices_and_signals.items():
+            for name, dtype in signals.items():
+                sig = epics_signal_rw(dtype, name, name)
+                await sig.connect(mock=True)
+                setattr(device, name, sig)
+
+    panda = i03.panda(fake_with_ophyd_sim=True)
+    await set_mock_blocks(
+        panda,
+        {
+            "inenc": (8, {"setp": float}),
+            "clock": (8, {"period": float}),
+            "counter": (8, {"enable": str}),
+        },
+    )
+    await create_mock_signals(
+        {
+            panda.pcap: {"enable": str},
+            **{panda.pulse[i]: {"enable": str} for i in panda.pulse.keys()},
+        }
+    )
+    return panda
+
+
 async def async_status_done():
     await asyncio.sleep(0)
 
@@ -606,6 +654,7 @@ async def fake_fgs_composite(
     aperture_scatterguard,
     zocalo,
     dcm,
+    panda,
 ):
     fake_composite = FlyScanXRayCentreComposite(
         aperture_scatterguard=aperture_scatterguard,
@@ -623,7 +672,7 @@ async def fake_fgs_composite(
         xbpm_feedback=xbpm_feedback,
         zebra=i03.zebra(fake_with_ophyd_sim=True),
         zocalo=zocalo,
-        panda=MagicMock(),
+        panda=panda,
         panda_fast_grid_scan=i03.panda_fast_grid_scan(fake_with_ophyd_sim=True),
         robot=i03.robot(fake_with_ophyd_sim=True),
     )
@@ -654,7 +703,7 @@ async def fake_fgs_composite(
     fake_composite.zocalo.timeout_s = 3
     set_mock_value(fake_composite.zebra_fast_grid_scan.scan_invalid, False)
     set_mock_value(fake_composite.zebra_fast_grid_scan.position_counter, 0)
-    fake_composite.smargon.x.max_velocity.sim_put(10)  # type: ignore
+    set_mock_value(fake_composite.smargon.x.max_velocity, 10)
 
     set_mock_value(fake_composite.robot.barcode, "BARCODE")
 
@@ -824,3 +873,10 @@ class MessageHandler:
 @pytest.fixture
 def sim_run_engine():
     return RunEngineSimulator()
+
+
+@pytest.fixture
+def feature_flags():
+    return FeatureFlags(
+        **{field_name: False for field_name in FeatureFlags.__fields__.keys()}
+    )

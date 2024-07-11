@@ -20,9 +20,6 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "parentid": TEST_DATA_COLLECTION_GROUP_ID,
     "sampleid": TEST_SAMPLE_ID,
     "detectorid": 78,
-    "axisstart": 0.0,
-    "axisrange": 0,
-    "axisend": 0,
     "data_collection_number": 1,
     "detector_distance": 100.0,
     "exp_time": 0.1,
@@ -31,7 +28,6 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
     "imgsuffix": "h5",
     "n_passes": 1,
     "overlap": 0,
-    "omegastart": 0,
     "start_image_number": 1,
     "wavelength": None,
     "xbeam": 150.0,
@@ -43,10 +39,6 @@ EXPECTED_DATA_COLLECTION_3D_XY = {
 }
 
 EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
-    "omegastart": 90,
-    "axis_range": 0,
-    "axisend": 90,
-    "axisstart": 90,
     "data_collection_number": 2,
     "filetemplate": "file_name_2_master.h5",
 }
@@ -108,10 +100,6 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
-                "focal_spot_size_at_samplex": 50.0,
-                "focal_spot_size_at_sampley": 20.0,
-                "beamsize_at_samplex": 50.0,
-                "beamsize_at_sampley": 20.0,
             },
         )
         assert_upsert_call_with(
@@ -124,10 +112,6 @@ class TestXrayCentreISPyBCallback:
                 "slitgapvertical": 0.2345,
                 "synchrotronmode": "User",
                 "undulatorgap1": 1.234,
-                "focal_spot_size_at_samplex": 50.0,
-                "focal_spot_size_at_sampley": 20.0,
-                "beamsize_at_samplex": 50.0,
-                "beamsize_at_sampley": 20.0,
             },
         )
 
@@ -161,6 +145,10 @@ class TestXrayCentreISPyBCallback:
                 "transmission": 100,
                 "flux": 10,
                 "resolution": 1.1830593328548429,
+                "focal_spot_size_at_samplex": 0.05,
+                "focal_spot_size_at_sampley": 0.02,
+                "beamsize_at_samplex": 0.05,
+                "beamsize_at_sampley": 0.02,
             },
         )
         assert_upsert_call_with(
@@ -173,6 +161,10 @@ class TestXrayCentreISPyBCallback:
                 "transmission": 100,
                 "flux": 10,
                 "resolution": 1.1830593328548429,
+                "focal_spot_size_at_samplex": 0.05,
+                "focal_spot_size_at_sampley": 0.02,
+                "beamsize_at_samplex": 0.05,
+                "beamsize_at_sampley": 0.02,
             },
         )
         mx_acq.update_dc_position.assert_not_called()
@@ -207,6 +199,10 @@ class TestXrayCentreISPyBCallback:
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 "
                 "images in 100.0 um by 120.0 um steps. Top left (px): [50,100], "
                 "bottom right (px): [3250,1700].",
+                "axisstart": 0,
+                "omegastart": 0,
+                "axisend": 0,
+                "axisrange": 0,
             },
         )
         assert_upsert_call_with(
@@ -222,6 +218,10 @@ class TestXrayCentreISPyBCallback:
                 "comments": "Hyperion: Xray centring - Diffraction grid scan of 40 by 10 "
                 "images in 100.0 um by 120.0 um steps. Top left (px): [50,0], "
                 "bottom right (px): [3250,800].",
+                "axisstart": 90,
+                "omegastart": 90,
+                "axisend": 90,
+                "axisrange": 0,
             },
         )
         assert_upsert_call_with(

@@ -23,6 +23,7 @@ from dodal.devices.robot import BartRobot, SampleLocation
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon, StubPosition
 from dodal.devices.synchrotron import Synchrotron
+from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
 from dodal.devices.undulator_dcm import UndulatorDCM
 from dodal.devices.webcam import Webcam
@@ -73,6 +74,7 @@ class RobotLoadThenCentreComposite:
     zocalo: ZocaloResults
     panda: HDFPanda
     panda_fast_grid_scan: PandAFastGridScan
+    thawer: Thawer
 
     # SetEnergyComposite fields
     vfm: FocusingMirrorWithStripes
@@ -182,6 +184,9 @@ def robot_load_then_centre_plan(
 
         yield from bps.wait("robot_load")
 
+        yield from bps.abs_set(composite.thawer.thaw_for_time_s, params.thawing_time)
+        yield from wait_for_smargon_not_disabled(composite.smargon)
+
         yield from take_robot_snapshots(
             composite.oav, composite.webcam, params.snapshot_directory
         )
@@ -191,8 +196,6 @@ def robot_load_then_centre_plan(
         yield from bps.read(composite.oav.snapshot)
         yield from bps.read(composite.webcam)
         yield from bps.save()
-
-        yield from wait_for_smargon_not_disabled(composite.smargon)
 
     yield from robot_load()
 
@@ -221,4 +224,5 @@ def robot_load_then_centre(
         composite.detector_motion,
         parameters.detector_distance_mm,
         robot_load_then_centre_plan(composite, parameters),
+        group=CONST.WAIT.GRID_READY_FOR_DC,
     )
