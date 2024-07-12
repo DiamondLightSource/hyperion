@@ -59,8 +59,8 @@ from .conftest import raw_params_from_file
 
 EXPECTED_DATACOLLECTION_FOR_ROTATION = {
     "wavelength": 0.71,
-    "beamSizeAtSampleX": 20,
-    "beamSizeAtSampleY": 20,
+    "beamSizeAtSampleX": 0.02,
+    "beamSizeAtSampleY": 0.02,
     "exposureTime": 0.023,
     "undulatorGap1": 1.12,
     "synchrotronMode": SynchrotronMode.USER.value,
@@ -446,7 +446,9 @@ def composite_for_rotation_scan(fake_create_rotation_devices: RotationScanCompos
         fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
         energy_ev / 1000,  # pyright: ignore
     )
-    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)  # pyright: ignore
+    set_mock_value(
+        fake_create_rotation_devices.undulator.current_gap, 1.12
+    )  # pyright: ignore
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         SynchrotronMode.USER,
@@ -646,12 +648,12 @@ def test_ispyb_deposition_in_gridscan(
         "axisstart": 0.0,
         "axisrange": 0,
         "axisend": 0,
-        "focalspotsizeatsamplex": 20.0,
-        "focalspotsizeatsampley": 20.0,
+        "focalspotsizeatsamplex": 0.02,
+        "focalspotsizeatsampley": 0.02,
         "slitgapvertical": 0.1,
         "slitgaphorizontal": 0.1,
-        "beamsizeatsamplex": 20.0,
-        "beamsizeatsampley": 20.0,
+        "beamsizeatsamplex": 0.02,
+        "beamsizeatsampley": 0.02,
         "transmission": 49.118,
         "datacollectionnumber": 1,
         "detectordistance": 100.0,
@@ -679,7 +681,7 @@ def test_ispyb_deposition_in_gridscan(
         ispyb_ids.data_collection_ids[0],
         "Hyperion: Xray centring - Diffraction grid scan of 20 by 12 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,161], "
-        "bottom right (px): [239,244].",
+        "bottom right (px): [239,244]. Aperture: Small. ",
     )
     compare_actual_and_expected(
         ispyb_ids.data_collection_ids[0],
@@ -733,7 +735,7 @@ def test_ispyb_deposition_in_gridscan(
         ispyb_ids.data_collection_ids[1],
         "Hyperion: Xray centring - Diffraction grid scan of 20 by 11 "
         "images in 20.0 um by 20.0 um steps. Top left (px): [100,165], "
-        "bottom right (px): [239,241].",
+        "bottom right (px): [239,241]. Aperture: Small. ",
     )
     position_id = fetch_datacollection_attribute(
         ispyb_ids.data_collection_ids[1], DATA_COLLECTION_COLUMN_MAP["positionid"]
@@ -781,7 +783,8 @@ def test_ispyb_deposition_in_rotation_plan(
     dcid = ispyb_cb.ispyb_ids.data_collection_ids[0]
     assert dcid is not None
     assert (
-        fetch_comment(dcid) == "Sample position: (1.0, 2.0, 3.0) test Aperture: Small"
+        fetch_comment(dcid)
+        == "Sample position: (1.0, 2.0, 3.0) test  Aperture: Small. "
     )
 
     expected_values = EXPECTED_DATACOLLECTION_FOR_ROTATION | {
