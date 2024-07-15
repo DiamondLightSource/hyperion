@@ -142,22 +142,17 @@ class TestData:
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.DESCRIPTORS.ISPYB_HARDWARE_READ,
+        "name": CONST.DESCRIPTORS.HARDWARE_READ_PRE,
     }  # type: ignore
     test_descriptor_document_during_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ,
+        "name": CONST.DESCRIPTORS.HARDWARE_READ_DURING,
     }  # type: ignore
     test_descriptor_document_zocalo_hardware: EventDescriptor = {
         "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": CONST.DESCRIPTORS.ZOCALO_HW_READ,
-    }  # type: ignore
-    test_descriptor_document_nexus_read: EventDescriptor = {
-        "uid": "aaaaaa",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.DESCRIPTORS.NEXUS_READ,
     }  # type: ignore
     test_event_document_oav_rotation_snapshot: Event = {
         "descriptor": "c7d698ce-6d49-4c56-967e-7d081f964573",
@@ -237,20 +232,16 @@ class TestData:
             "attenuator-actual_transmission": 1,
             "flux_flux_reading": 10,
             "dcm-energy_in_kev": 11.105,
+            "eiger_bit_depth": "16",
         },
-        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
+        "timestamps": {
+            "det1": 1666604299.8220396,
+            "det2": 1666604299.8235943,
+            "eiger_bit_depth": 1666604299.8220396,
+        },
         "seq_num": 1,
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "filled": {},
-    }
-    test_event_document_nexus_read: Event = {
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
-        "time": 1709654583.9770422,
-        "data": {"eiger_bit_depth": "16"},
-        "timestamps": {"eiger_bit_depth": 1666604299.8220396},
-        "seq_num": 1,
-        "filled": {},
-        "descriptor": "aaaaaa",
     }
     test_event_document_zocalo_hardware: Event = {
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",

@@ -11,8 +11,7 @@ from bluesky.run_engine import RunEngine
 from h5py import Dataset, ExternalLink, Group
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_ispyb_during_collection,
-    read_hardware_for_nexus_writer,
+    read_hardware_during_collection,
 )
 from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
@@ -62,13 +61,13 @@ def fake_rotation_scan(
         }
     )
     def plan():
-        yield from read_hardware_for_ispyb_during_collection(
+        yield from read_hardware_during_collection(
             rotation_devices.aperture_scatterguard,
             rotation_devices.attenuator,
             rotation_devices.flux,
             rotation_devices.dcm,
+            rotation_devices.eiger,
         )
-        yield from read_hardware_for_nexus_writer(rotation_devices.eiger)
 
     return plan()
 

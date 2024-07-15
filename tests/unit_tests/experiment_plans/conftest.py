@@ -83,7 +83,7 @@ def run_generic_ispyb_handler_setup(
         }  # type: ignore
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "123abc", "name": CONST.DESCRIPTORS.ISPYB_HARDWARE_READ}  # type: ignore
+        {"uid": "123abc", "name": CONST.DESCRIPTORS.HARDWARE_READ_PRE}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(
@@ -92,7 +92,7 @@ def run_generic_ispyb_handler_setup(
         )
     )
     ispyb_handler.activity_gated_descriptor(
-        {"uid": "abc123", "name": CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ}  # type: ignore
+        {"uid": "abc123", "name": CONST.DESCRIPTORS.HARDWARE_READ_DURING}  # type: ignore
     )
     ispyb_handler.activity_gated_event(
         make_event_doc(

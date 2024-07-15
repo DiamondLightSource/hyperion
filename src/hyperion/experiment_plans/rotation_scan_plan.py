@@ -27,10 +27,9 @@ from hyperion.device_setup_plans.manipulate_sample import (
     setup_sample_environment,
 )
 from hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_ispyb_during_collection,
-    read_hardware_for_ispyb_pre_collection,
-    read_hardware_for_nexus_writer,
+    read_hardware_during_collection,
     read_hardware_for_zocalo,
+    read_hardware_pre_collection,
 )
 from hyperion.device_setup_plans.setup_zebra import (
     arm_zebra,
@@ -214,15 +213,13 @@ def rotation_scan_plan(
         # get some information for the ispyb deposition and trigger the callback
         yield from read_hardware_for_zocalo(composite.eiger)
 
-        yield from read_hardware_for_ispyb_pre_collection(
+        yield from read_hardware_pre_collection(
             composite.undulator,
             composite.synchrotron,
             composite.s4_slit_gaps,
             composite.robot,
             composite.smargon,
         )
-
-        yield from read_hardware_for_nexus_writer(composite.eiger)
 
         # Get ready for the actual scan
         yield from bps.abs_set(
@@ -242,11 +239,12 @@ def rotation_scan_plan(
         LOGGER.info("Executing rotation scan")
         yield from bps.rel_set(axis, motion_values.distance_to_move_deg, wait=True)
 
-        yield from read_hardware_for_ispyb_during_collection(
+        yield from read_hardware_during_collection(
             composite.aperture_scatterguard,
             composite.attenuator,
             composite.flux,
             composite.dcm,
+            composite.eiger,
         )
 
     yield from _rotation_scan_plan(motion_values, composite)
