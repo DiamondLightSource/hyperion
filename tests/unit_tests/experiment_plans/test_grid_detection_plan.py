@@ -4,6 +4,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator
 from bluesky.utils import Msg
 from dodal.beamlines import i03
 from dodal.devices.backlight import Backlight
@@ -345,11 +346,11 @@ def test_when_grid_detection_plan_run_then_grid_detection_callback_gets_correct_
 def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
     fake_logger: MagicMock,
     fake_devices,
+    sim_run_engine: RunEngineSimulator,
     test_config_files,
     odd,
 ):
     composite, _ = fake_devices
-    sim = RunEngineSimulator()
     params = OAVParameters("loopCentring", test_config_files["oav_config_json"])
     grid_width_microns = 161.2
     box_size_um = 20
@@ -382,19 +383,9 @@ def test_when_detected_grid_has_odd_y_steps_then_add_a_y_step_and_shift_grid(
             if msg.obj.dotted_name in abs_sets.keys():
                 abs_sets[msg.obj.dotted_name].append(msg.args[0])
 
-    sim.add_handler(
-        "set",
-        None,
-        record_set,
-    )
-
-    sim.add_handler(
-        "read",
-        None,
-        handle_read,
-    )
-
-    sim.simulate_plan(
+    sim_run_engine.add_handler("set", record_set)
+    sim_run_engine.add_handler("read", handle_read)
+    sim_run_engine.simulate_plan(
         grid_detection_plan(
             composite,
             parameters=params,

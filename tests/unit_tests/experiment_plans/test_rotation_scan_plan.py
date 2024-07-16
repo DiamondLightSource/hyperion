@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
@@ -272,20 +273,20 @@ def test_rotation_plan_reads_hardware(
     fake_create_rotation_devices: RotationScanComposite,
     test_rotation_params,
     motion_values,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     sim_run_engine.add_handler(
         "read",
-        "synchrotron-synchrotron_mode",
         lambda msg: {"values": {"value": SynchrotronMode.USER}},
+        "synchrotron-synchrotron_mode",
     )
     sim_run_engine.add_handler(
         "read",
-        "synchrotron-top_up_start_countdown",
         lambda msg: {"values": {"value": -1}},
+        "synchrotron-top_up_start_countdown",
     )
     sim_run_engine.add_handler(
-        "read", "smargon-omega", lambda msg: {"smargon-omega": {"value": -1}}
+        "read", lambda msg: {"smargon-omega": {"value": -1}}, "smargon-omega"
     )
 
     msgs = sim_run_engine.simulate_plan(
@@ -294,18 +295,18 @@ def test_rotation_plan_reads_hardware(
         )
     )
 
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "create"
         and msg.kwargs["name"] == CONST.DESCRIPTORS.HARDWARE_READ_PRE,
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
-    sim_run_engine.assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-x"
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-y"
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-z"
     )

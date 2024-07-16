@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.synchrotron import SynchrotronMode
@@ -78,7 +79,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
     simple_beamline,
     test_config_files,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     mock_grid_callback.return_value.get_grid_parameters.return_value = {
         "transmission_frac": 1.0,
@@ -100,20 +101,20 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
 
     sim_run_engine.add_handler(
         "read",
-        "synchrotron-synchrotron_mode",
         lambda msg_: {"values": {"value": SynchrotronMode.SHUTDOWN}},
+        "synchrotron-synchrotron_mode",
     )
 
     def add_handlers_to_simulate_detector_motion(msg: Msg):
         sim_run_engine.add_handler(
             "read",
-            "detector_motion_shutter",
             lambda msg_: {"values": {"value": int(ShutterState.OPEN)}},
+            "detector_motion_shutter",
         )
         sim_run_engine.add_handler(
             "read",
-            "detector_motion_z_motor_done_move",
             lambda msg_: {"values": {"value": 1}},
+            "detector_motion_z_motor_done_move",
         )
 
     sim_run_engine.add_wait_handler(
@@ -128,7 +129,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         ),
     )
 
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages, lambda msg: msg.obj is simple_beamline.detector_motion.z
     )
     assert messages[0].args[0] == 100
@@ -136,12 +137,12 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     assert messages[1].obj is simple_beamline.detector_motion.shutter
     assert messages[1].args[0] == 1
     assert messages[1].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages[2:],
         lambda msg: msg.command == "wait"
         and msg.kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC,
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         messages[2:],
         lambda msg: msg.command == "open_run"
         and msg.kwargs["subplan_name"] == "do_fgs",

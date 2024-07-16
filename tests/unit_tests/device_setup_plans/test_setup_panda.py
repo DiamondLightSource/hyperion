@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from ophyd_async.panda import SeqTrigger
 
@@ -16,14 +17,14 @@ from hyperion.device_setup_plans.setup_panda import (
     setup_panda_for_flyscan,
 )
 
-from ...conftest import RunEngineSimulator
-
 
 def get_smargon_speed(x_step_size_mm: float, time_between_x_steps_ms: float) -> float:
     return x_step_size_mm / time_between_x_steps_ms
 
 
-def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
+def run_simulating_setup_panda_functions(
+    plan: str, sim_run_engine: RunEngineSimulator, mock_load_device=MagicMock
+):
     num_of_sets = 0
     num_of_waits = 0
     mock_panda = MagicMock()
@@ -37,11 +38,7 @@ def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
             num_of_waits += 1
 
     sim = RunEngineSimulator()
-    sim.add_handler(
-        ["set", "wait"],
-        None,
-        count_commands,
-    )
+    sim.add_handler(["set", "wait"], count_commands)
 
     if plan == "setup":
         smargon_speed = get_smargon_speed(0.1, 1)
@@ -63,9 +60,9 @@ def run_simulating_setup_panda_functions(plan: str, mock_load_device=MagicMock):
 
 
 @patch("hyperion.device_setup_plans.setup_panda.load_device")
-def test_setup_panda_performs_correct_plans(mock_load_device):
+def test_setup_panda_performs_correct_plans(mock_load_device, sim_run_engine):
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
-        "setup", mock_load_device
+        "setup", sim_run_engine, mock_load_device
     )
     mock_load_device.assert_called_once()
     assert num_of_sets == 9
@@ -181,9 +178,7 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
     ), patch(
         "hyperion.device_setup_plans.setup_panda.bps.wait",
         MagicMock(side_effect=handle_wait),
-    ), patch(
-        "hyperion.device_setup_plans.setup_panda.load_device"
-    ), patch(
+    ), patch("hyperion.device_setup_plans.setup_panda.load_device"), patch(
         "hyperion.device_setup_plans.setup_panda.bps.abs_set"
     ):
         RE(
@@ -201,8 +196,10 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
 
 # It also would be useful to have some system tests which check that (at least)
 # all the blocks which were enabled on setup are also disabled on tidyup
-def test_disarm_panda_disables_correct_blocks():
-    num_of_sets, num_of_waits = run_simulating_setup_panda_functions("disarm")
+def test_disarm_panda_disables_correct_blocks(sim_run_engine):
+    num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
+        "disarm", sim_run_engine
+    )
     assert num_of_sets == 6
     assert num_of_waits == 1
 

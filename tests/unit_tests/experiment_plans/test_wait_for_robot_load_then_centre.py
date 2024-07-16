@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import EigerDetector
@@ -98,17 +99,17 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     sim_run_engine.add_handler(
         "read",
-        "dcm-energy_in_kev",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(robot_load_composite, robot_load_then_centre_params)
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "set_energy_plan"
     )
     params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
@@ -126,12 +127,12 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
 def test_robot_load_then_centre_doesnt_set_energy_if_not_specified_and_current_energy_set_on_eiger(
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     sim_run_engine.add_handler(
         "read",
-        "dcm-energy_in_kev",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(
@@ -148,7 +149,7 @@ def run_simulating_smargon_wait(
     robot_load_then_centre_params,
     robot_load_composite,
     total_disabled_reads,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     robot_load_composite.smargon = instantiate_fake_device(Smargon, name="smargon")
     robot_load_composite.eiger = instantiate_fake_device(EigerDetector, name="eiger")
@@ -162,13 +163,11 @@ def run_simulating_smargon_wait(
 
     sim_run_engine.add_handler(
         "read",
-        "dcm-energy_in_kev",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
     )
     sim_run_engine.add_handler(
-        "read",
-        "smargon-disabled",
-        return_not_disabled_after_reads,
+        "read", return_not_disabled_after_reads, "smargon-disabled"
     )
 
     return sim_run_engine.simulate_plan(
@@ -367,14 +366,14 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     robot_load_then_centre_params_no_energy.thawing_time = (thaw_time := 50)
 
     sim_run_engine.add_handler(
         "read",
-        "dcm-energy_in_kev",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
     )
 
     messages = sim_run_engine.simulate_plan(
@@ -384,7 +383,7 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
         )
     )
 
-    sim_run_engine.assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "thawer-thaw_for_time_s"

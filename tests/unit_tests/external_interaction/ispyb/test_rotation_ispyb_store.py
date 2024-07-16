@@ -482,9 +482,7 @@ def test_store_rotation_scan_uses_supplied_dcgid(
     scan_data_info_for_begin,
     scan_data_info_for_update,
 ):
-    mock_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = (
-        dcgid
-    )
+    mock_ispyb_conn.return_value.mx_acquisition.upsert_data_collection_group.return_value = dcgid
     store_in_ispyb = StoreInIspyb(CONST.SIM.ISPYB_CONFIG)
     scan_data_info_for_begin.data_collection_info.parent_id = dcgid
     ispyb_ids = store_in_ispyb.begin_deposition(
