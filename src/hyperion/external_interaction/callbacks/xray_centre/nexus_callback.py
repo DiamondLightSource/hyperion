@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict
 
-from hyperion.external_interaction.callbacks.logging_callback import format_doc_for_log
 from hyperion.external_interaction.callbacks.plan_reactive_callback import (
     PlanReactiveCallback,
 )
@@ -75,10 +74,7 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
 
     def activity_gated_event(self, doc: Event) -> Event | None:
         assert (event_descriptor := self.descriptors.get(doc["descriptor"])) is not None
-        if (
-            event_descriptor.get("name")
-            == CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ
-        ):
+        if event_descriptor.get("name") == CONST.DESCRIPTORS.HARDWARE_READ_DURING:
             data = doc["data"]
             for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 assert nexus_writer, "Nexus callback did not receive start doc"
@@ -90,15 +86,9 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                     data["flux_flux_reading"],
                     data["attenuator-actual_transmission"],
                 )
-        if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
-            NEXUS_LOGGER.info(
-                f"Nexus handler received event from read hardware {format_doc_for_log(doc)}"
-            )
-            for nexus_writer in [self.nexus_writer_1, self.nexus_writer_2]:
                 vds_data_type = vds_type_based_on_bit_depth(
                     doc["data"]["eiger_bit_depth"]
                 )
-                assert nexus_writer, "Nexus callback did not receive start doc"
                 nexus_writer.create_nexus_file(vds_data_type)
                 NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.full_filename}")
 

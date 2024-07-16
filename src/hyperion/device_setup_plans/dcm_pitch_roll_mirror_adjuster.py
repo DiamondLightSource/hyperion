@@ -40,7 +40,7 @@ def _apply_and_wait_for_voltages_to_settle(
 
     required_voltages = sample_data[stripe_key][mirror_key]
     for voltage_channel, required_voltage in zip(
-        mirror_voltages.voltage_channels, required_voltages
+        mirror_voltages.voltage_channels.values(), required_voltages
     ):
         LOGGER.debug(
             f"Applying and waiting for voltage {voltage_channel.name} = {required_voltage}"

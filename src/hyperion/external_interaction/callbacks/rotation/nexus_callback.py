@@ -53,10 +53,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 "has no corresponding descriptor record"
             )
             return doc
-        if (
-            event_descriptor.get("name")
-            == CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ
-        ):
+        if event_descriptor.get("name") == CONST.DESCRIPTORS.HARDWARE_READ_DURING:
             NEXUS_LOGGER.info(
                 f"Nexus handler received event from read hardware {format_doc_for_log(doc)}"
             )
@@ -70,12 +67,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 data["flux_flux_reading"],
                 data["attenuator-actual_transmission"],
             )
-        if event_descriptor.get("name") == CONST.DESCRIPTORS.NEXUS_READ:
-            NEXUS_LOGGER.info(
-                f"Nexus handler received event from read hardware {format_doc_for_log(doc)}"
-            )
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
-            assert self.writer is not None
             self.writer.create_nexus_file(vds_data_type)
             NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")
         return doc

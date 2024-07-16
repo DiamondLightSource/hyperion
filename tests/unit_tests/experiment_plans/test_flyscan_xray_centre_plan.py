@@ -21,8 +21,8 @@ from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_ispyb_during_collection,
-    read_hardware_for_ispyb_pre_collection,
+    read_hardware_during_collection,
+    read_hardware_pre_collection,
 )
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -102,12 +102,10 @@ def ispyb_plan(test_fgs_params: ThreeDGridScan):
         }
     )
     def standalone_read_hardware_for_ispyb(
-        und, syn, slits, robot, attn, fl, dcm, ap_sg, sm
+        und, syn, slits, robot, attn, fl, dcm, ap_sg, sm, det
     ):
-        yield from read_hardware_for_ispyb_pre_collection(
-            und, syn, slits, ap_sg, robot, sm
-        )
-        yield from read_hardware_for_ispyb_during_collection(attn, fl, dcm)
+        yield from read_hardware_pre_collection(und, syn, slits, robot, sm)
+        yield from read_hardware_during_collection(ap_sg, attn, fl, dcm, det)
 
     return standalone_read_hardware_for_ispyb
 
@@ -253,6 +251,7 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.dcm,
                     fake_fgs_composite.aperture_scatterguard,
                     fake_fgs_composite.smargon,
+                    fake_fgs_composite.eiger,
                 )
             )
             # fmt: off
@@ -270,12 +269,12 @@ class TestFlyscanXrayCentrePlan:
                     "synchrotron-synchrotron_mode": synchrotron_test_value.value,
                     "s4_slit_gaps_xgap": xgap_test_value,
                     "s4_slit_gaps_ygap": ygap_test_value,
-                    'aperture_scatterguard-selected_aperture': ap_sg_test_value
                 },
             )
             assert_event(
                 test_ispyb_callback.activity_gated_event.mock_calls[1],  # pyright: ignore
                 {
+                    'aperture_scatterguard-selected_aperture': ap_sg_test_value,
                     "attenuator-actual_transmission": transmission_test_value,
                     "flux_flux_reading": flux_test_value,
                     "dcm-energy_in_kev": current_energy_kev_test_value,
@@ -440,7 +439,7 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
-    def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
+    async def test_when_gridscan_finished_then_smargon_stub_offsets_are_set_and_dev_shm_disabled(
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
@@ -469,7 +468,7 @@ class TestFlyscanXrayCentrePlan:
             )
         )
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 1
         )
         assert fake_fgs_composite.eiger.odin.fan.dev_shm_enable.get() == 0
@@ -514,8 +513,10 @@ class TestFlyscanXrayCentrePlan:
         )
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
-        call = app_to_comment.call_args_list[0]
-        assert "Crystal 1: Strength 999999" in call.args[1]
+        append_aperture_call = app_to_comment.call_args_list[0].args[1]
+        append_zocalo_call = app_to_comment.call_args_list[-1].args[1]
+        assert "Aperture:" in append_aperture_call
+        assert "Crystal 1: Strength 999999" in append_zocalo_call
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
@@ -600,8 +601,10 @@ class TestFlyscanXrayCentrePlan:
         )
         app_to_comment: MagicMock = ispyb_cb.ispyb.append_to_comment  # type:ignore
         app_to_comment.assert_called()
-        call = app_to_comment.call_args_list[0]
-        assert "Zocalo found no crystals in this gridscan" in call.args[1]
+        append_aperture_call = app_to_comment.call_args_list[0].args[1]
+        append_zocalo_call = app_to_comment.call_args_list[-1].args[1]
+        assert "Aperture:" in append_aperture_call
+        assert "Zocalo found no crystals in this gridscan" in append_zocalo_call
 
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.bps.complete", autospec=True
@@ -637,9 +640,9 @@ class TestFlyscanXrayCentrePlan:
                 random.uniform(-0.5, 0.5),
             ]
         )
-        fake_fgs_composite.smargon.x.user_readback.sim_put(initial_x_y_z[0])  # type: ignore
-        fake_fgs_composite.smargon.y.user_readback.sim_put(initial_x_y_z[1])  # type: ignore
-        fake_fgs_composite.smargon.z.user_readback.sim_put(initial_x_y_z[2])  # type: ignore
+        set_mock_value(fake_fgs_composite.smargon.x.user_readback, initial_x_y_z[0])
+        set_mock_value(fake_fgs_composite.smargon.y.user_readback, initial_x_y_z[1])
+        set_mock_value(fake_fgs_composite.smargon.z.user_readback, initial_x_y_z[2])
 
         def wrapped_gridscan_and_move():
             run_generic_ispyb_handler_setup(ispyb_cb, test_fgs_params_panda_zebra)
@@ -661,7 +664,7 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
-    def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
+    async def test_given_gridscan_fails_to_centre_then_stub_offsets_not_set(
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
@@ -686,7 +689,7 @@ class TestFlyscanXrayCentrePlan:
                 )
             )
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 0
         )
 
@@ -696,7 +699,7 @@ class TestFlyscanXrayCentrePlan:
     @patch(
         "hyperion.experiment_plans.flyscan_xray_centre_plan.move_x_y_z", autospec=True
     )
-    def test_given_setting_stub_offsets_disabled_then_stub_offsets_not_set(
+    async def test_given_setting_stub_offsets_disabled_then_stub_offsets_not_set(
         self,
         move_xyz: MagicMock,
         run_gridscan: MagicMock,
@@ -729,7 +732,7 @@ class TestFlyscanXrayCentrePlan:
             )
         )
         assert (
-            fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get()
+            await fake_fgs_composite.smargon.stub_offsets.center_at_current_position.proc.get_value()
             == 0
         )
 
@@ -980,10 +983,10 @@ class TestFlyscanXrayCentrePlan:
         assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
 
     @patch(
-        "hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
-        new=MagicMock(side_effect=lambda *_: iter([Msg("kickoff_gridscan")])),
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+        new=MagicMock(side_effect=lambda *_, **__: iter([Msg("check_topup")])),
     )
-    def test_read_hardware_for_nexus_occurs_after_eiger_arm(
+    def test_read_hardware_during_collection_occurs_after_eiger_arm(
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: ThreeDGridScan,
@@ -1006,6 +1009,11 @@ class TestFlyscanXrayCentrePlan:
             msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "kickoff"
+            and msg.obj == feature_controlled.fgs_motors,
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "create"
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
@@ -1014,9 +1022,6 @@ class TestFlyscanXrayCentrePlan:
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"
-        )
-        sim_run_engine.assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "kickoff_gridscan"
         )
 
     @patch(

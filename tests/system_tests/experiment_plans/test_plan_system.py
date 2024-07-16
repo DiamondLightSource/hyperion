@@ -7,8 +7,8 @@ from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.undulator import Undulator
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_ispyb_during_collection,
-    read_hardware_for_ispyb_pre_collection,
+    read_hardware_during_collection,
+    read_hardware_pre_collection,
 )
 from hyperion.parameters.constants import CONST
 
@@ -28,24 +28,22 @@ async def test_getting_data_for_ispyb():
         prefix=f"{CONST.SIM.BEAMLINE}-AL-APSG-04:", name="ao_sg"
     )
     smargon = i03.smargon(fake_with_ophyd_sim=True)
-
-    undulator.wait_for_connection()
+    eiger = i03.eiger(fake_with_ophyd_sim=True)
+    await undulator.connect()
     await synchrotron.connect()
     slit_gaps.wait_for_connection()
-    attenuator.wait_for_connection()
+    await attenuator.connect()
     flux.wait_for_connection()
-    aperture_scatterguard.wait_for_connection()
-    smargon.wait_for_connection()
+    await aperture_scatterguard.connect()
+    await smargon.connect()
     robot = i03.robot(fake_with_ophyd_sim=True)
 
     RE = RunEngine()
 
     @bpp.run_decorator()
     def standalone_read_hardware(und, syn, slits, robot, att, flux, ap_sg, sm):
-        yield from read_hardware_for_ispyb_pre_collection(
-            und, syn, slits, robot, ap_sg, smargon=sm
-        )
-        yield from read_hardware_for_ispyb_during_collection(att, flux, dcm)
+        yield from read_hardware_pre_collection(und, syn, slits, robot, smargon=sm)
+        yield from read_hardware_during_collection(ap_sg, att, flux, dcm, eiger)
 
     RE(
         standalone_read_hardware(

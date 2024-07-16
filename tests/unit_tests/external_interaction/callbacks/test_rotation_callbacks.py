@@ -15,8 +15,7 @@ from ophyd.sim import make_fake_device
 from ophyd_async.core import DeviceCollector, set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_ispyb_during_collection,
-    read_hardware_for_nexus_writer,
+    read_hardware_during_collection,
     read_hardware_for_zocalo,
 )
 from hyperion.external_interaction.callbacks.common.callback_util import (
@@ -42,6 +41,9 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
+from hyperion.utils.aperturescatterguard import (
+    load_default_aperture_scatterguard_positions_if_unset,
+)
 
 from ....conftest import raw_params_from_file
 
@@ -90,6 +92,8 @@ def fake_rotation_scan(
     flux = make_fake_device(Flux)(name="flux")
     eiger = make_fake_device(EigerDetector)(name="eiger")
     dcm = i03.dcm(fake_with_ophyd_sim=True)
+    ap_sg = i03.aperture_scatterguard(fake_with_ophyd_sim=True)
+    load_default_aperture_scatterguard_positions_if_unset(ap_sg)
     set_mock_value(dcm.energy_in_kev.user_readback, 12.1)
 
     @bpp.subs_decorator(list(subscriptions))
@@ -115,8 +119,9 @@ def fake_rotation_scan(
             }
         )
         def fake_main_plan():
-            yield from read_hardware_for_ispyb_during_collection(attenuator, flux, dcm)
-            yield from read_hardware_for_nexus_writer(eiger)
+            yield from read_hardware_during_collection(
+                ap_sg, attenuator, flux, dcm, eiger
+            )
             yield from read_hardware_for_zocalo(eiger)
             if after_main_do:
                 after_main_do(subscriptions)
@@ -156,7 +161,7 @@ def test_nexus_handler_gets_documents_in_mock_plan(
     call_content_inner = nexus_handler.activity_gated_start.call_args_list[1].args[0]  # type: ignore
     assert call_content_inner["subplan_name"] == CONST.PLAN.ROTATION_MAIN
 
-    assert nexus_handler.activity_gated_event.call_count == 3  # type: ignore
+    assert nexus_handler.activity_gated_event.call_count == 2  # type: ignore
 
 
 @patch(

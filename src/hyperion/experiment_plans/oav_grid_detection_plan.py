@@ -166,5 +166,5 @@ def grid_detection_plan(
         yield from bps.save()
 
         LOGGER.info(
-            f"Grid calculated at {angle}: {x_steps}px by {y_steps}px starting at {upper_left}px"
+            f"Grid calculated at {angle}: {x_steps} by {y_steps} steps starting at {upper_left}px"
         )

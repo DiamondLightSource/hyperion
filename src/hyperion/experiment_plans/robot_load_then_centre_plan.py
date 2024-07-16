@@ -224,4 +224,5 @@ def robot_load_then_centre(
         composite.detector_motion,
         parameters.detector_distance_mm,
         robot_load_then_centre_plan(composite, parameters),
+        group=CONST.WAIT.GRID_READY_FOR_DC,
     )

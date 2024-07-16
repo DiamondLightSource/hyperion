@@ -86,9 +86,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
             return doc
         match event_descriptor.get("name"):
-            case CONST.DESCRIPTORS.ISPYB_HARDWARE_READ:
+            case CONST.DESCRIPTORS.HARDWARE_READ_PRE:
                 scan_data_infos = self._handle_ispyb_hardware_read(doc)
-            case CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ:
+            case CONST.DESCRIPTORS.HARDWARE_READ_DURING:
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
                 return self._tag_doc(doc)
@@ -103,24 +103,17 @@ class BaseISPyBCallback(PlanReactiveCallback):
             synchrotron_mode := doc["data"]["synchrotron-synchrotron_mode"],
             SynchrotronMode,
         )
-        aperture_size = SingleAperturePosition(
-            **doc["data"]["aperture_scatterguard-selected_aperture"]
-        )
-        beamsize = beam_size_from_aperture(aperture_size)
+
         hwscan_data_collection_info = DataCollectionInfo(
-            beamsize_at_samplex=beamsize.x_um,
-            beamsize_at_sampley=beamsize.y_um,
-            focal_spot_size_at_samplex=beamsize.x_um,
-            focal_spot_size_at_sampley=beamsize.y_um,
             undulator_gap1=doc["data"]["undulator-current_gap"],
             synchrotron_mode=synchrotron_mode.value,
             slitgap_horizontal=doc["data"]["s4_slit_gaps_xgap"],
             slitgap_vertical=doc["data"]["s4_slit_gaps_ygap"],
         )
         hwscan_position_info = DataCollectionPositionInfo(
-            pos_x=doc["data"]["smargon_x"],
-            pos_y=doc["data"]["smargon_y"],
-            pos_z=doc["data"]["smargon_z"],
+            pos_x=doc["data"]["smargon-x"],
+            pos_y=doc["data"]["smargon-y"],
+            pos_z=doc["data"]["smargon-z"],
         )
         scan_data_infos = self.populate_info_for_update(
             hwscan_data_collection_info, hwscan_position_info, self.params
@@ -130,8 +123,18 @@ class BaseISPyBCallback(PlanReactiveCallback):
 
     def _handle_ispyb_transmission_flux_read(self, doc) -> Sequence[ScanDataInfo]:
         assert self.params
+        aperture_size = SingleAperturePosition(
+            **doc["data"]["aperture_scatterguard-selected_aperture"]
+        )
+        beamsize = beam_size_from_aperture(aperture_size)
+        beamsize_x_mm = beamsize.x_um / 1000 if beamsize.x_um else None
+        beamsize_y_mm = beamsize.y_um / 1000 if beamsize.y_um else None
         hwscan_data_collection_info = DataCollectionInfo(
-            flux=doc["data"]["flux_flux_reading"]
+            beamsize_at_samplex=beamsize_x_mm,
+            beamsize_at_sampley=beamsize_y_mm,
+            focal_spot_size_at_samplex=beamsize_x_mm,
+            focal_spot_size_at_sampley=beamsize_y_mm,
+            flux=doc["data"]["flux_flux_reading"],
         )
         if transmission := doc["data"]["attenuator-actual_transmission"]:
             # Ispyb wants the transmission in a percentage, we use fractions
@@ -150,6 +153,7 @@ class BaseISPyBCallback(PlanReactiveCallback):
             hwscan_data_collection_info, None, self.params
         )
         ISPYB_LOGGER.info("Updating ispyb data collection after flux read.")
+        self.append_to_comment(f"Aperture: {aperture_size.name}. ")
         return scan_data_infos
 
     @abstractmethod

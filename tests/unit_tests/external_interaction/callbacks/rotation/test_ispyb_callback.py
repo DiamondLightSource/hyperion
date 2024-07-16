@@ -149,21 +149,18 @@ def test_hardware_read_events(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "focal_spot_size_at_samplex": 50.0,
-            "focal_spot_size_at_sampley": 20.0,
-            "beamsize_at_samplex": 50.0,
-            "beamsize_at_sampley": 20.0,
-            "comments": "Sample position: (10.0, 20.0, 30.0) test Aperture: Medium",
+            "comments": "Sample position (µm): (158, 24, 3) test ",
         },
     )
+    expected_data = TestData.test_event_document_pre_data_collection["data"]
     assert_upsert_call_with(
         mx.update_dc_position.mock_calls[0],
         mx.get_dc_position_params(),
         {
             "id": TEST_DATA_COLLECTION_IDS[0],
-            "pos_x": 10,
-            "pos_y": 20,
-            "pos_z": 30,
+            "pos_x": expected_data["smargon-x"],
+            "pos_y": expected_data["smargon-y"],
+            "pos_z": expected_data["smargon-z"],
         },
     )
 
@@ -201,6 +198,10 @@ def test_flux_read_events(
         {
             "parentid": TEST_DATA_COLLECTION_GROUP_ID,
             "id": TEST_DATA_COLLECTION_IDS[0],
+            "focal_spot_size_at_samplex": 0.05,
+            "focal_spot_size_at_sampley": 0.02,
+            "beamsize_at_samplex": 0.05,
+            "beamsize_at_sampley": 0.02,
             "wavelength": 1.1164718451643736,
             "transmission": 98,
             "flux": 9.81,
@@ -327,10 +328,6 @@ def test_comment_correct_after_hardware_read(
             "slitgapvertical": 0.2345,
             "synchrotronmode": "User",
             "undulatorgap1": 1.234,
-            "focal_spot_size_at_samplex": 50.0,
-            "focal_spot_size_at_sampley": 20.0,
-            "beamsize_at_samplex": 50.0,
-            "beamsize_at_sampley": 20.0,
-            "comments": "Sample position: (10.0, 20.0, 30.0) a lovely unit test Aperture: Medium",
+            "comments": "Sample position (µm): (158, 24, 3) a lovely unit test ",
         },
     )

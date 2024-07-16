@@ -2,7 +2,6 @@ import dataclasses
 from typing import Generator
 
 import bluesky.plan_stubs as bps
-import numpy as np
 from blueapi.core import BlueskyContext
 from bluesky.utils import Msg
 from dodal.devices.backlight import Backlight
@@ -17,6 +16,7 @@ from dodal.devices.oav.utils import (
 from dodal.devices.smargon import Smargon
 
 from hyperion.device_setup_plans.setup_oav import pre_centring_setup_oav
+from hyperion.device_setup_plans.smargon import move_smargon_warn_on_out_of_range
 from hyperion.exceptions import WarningException
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
@@ -87,9 +87,9 @@ def move_pin_into_view(
 
         smargon_x = yield from bps.rd(smargon.x.user_readback)
         ideal_move_to_find_pin = float(smargon_x) + step_size_mm
-        move_within_limits = max(
-            min(ideal_move_to_find_pin, smargon.x.high_limit), smargon.x.low_limit
-        )
+        high_limit = yield from bps.rd(smargon.x.high_limit_travel)
+        low_limit = yield from bps.rd(smargon.x.low_limit_travel)
+        move_within_limits = max(min(ideal_move_to_find_pin, high_limit), low_limit)
         if move_within_limits != ideal_move_to_find_pin:
             LOGGER.warning(
                 f"Pin tip is off screen, and moving {step_size_mm} mm would cross limits, "
@@ -108,25 +108,6 @@ def move_pin_into_view(
         )
     else:
         return (tip_x_px, tip_y_px)
-
-
-def move_smargon_warn_on_out_of_range(
-    smargon: Smargon, position: np.ndarray | list[float] | tuple[float, float, float]
-):
-    """Throws a WarningException if the specified position is out of range for the
-    smargon. Otherwise moves to that position."""
-    if not smargon.get_xyz_limits().position_valid(position):
-        raise WarningException(
-            "Pin tip centring failed - pin too long/short/bent and out of range"
-        )
-    yield from bps.mv(
-        smargon.x,
-        position[0],
-        smargon.y,
-        position[1],
-        smargon.z,
-        position[2],
-    )
 
 
 def pin_tip_centre_plan(

@@ -50,10 +50,9 @@ from scanspec.core import AxesPoints, Axis
 
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_ispyb_during_collection,
-    read_hardware_for_ispyb_pre_collection,
-    read_hardware_for_nexus_writer,
+    read_hardware_during_collection,
     read_hardware_for_zocalo,
+    read_hardware_pre_collection,
 )
 from hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
@@ -266,17 +265,22 @@ def run_gridscan(
     # we should generate an event reading the values which need to be included in the
     # ispyb deposition
     with TRACER.start_span("ispyb_hardware_readings"):
-        yield from read_hardware_for_ispyb_pre_collection(
+        yield from read_hardware_pre_collection(
             fgs_composite.undulator,
             fgs_composite.synchrotron,
             fgs_composite.s4_slit_gaps,
-            fgs_composite.aperture_scatterguard,
             fgs_composite.robot,
             fgs_composite.smargon,
         )
-        yield from read_hardware_for_ispyb_during_collection(
-            fgs_composite.attenuator, fgs_composite.flux, fgs_composite.dcm
-        )
+
+    read_during_collection = partial(
+        read_hardware_during_collection,
+        fgs_composite.aperture_scatterguard,
+        fgs_composite.attenuator,
+        fgs_composite.flux,
+        fgs_composite.dcm,
+        fgs_composite.eiger,
+    )
 
     LOGGER.info("Setting fgs params")
     yield from feature_controlled.set_flyscan_params()
@@ -285,13 +289,8 @@ def run_gridscan(
     yield from wait_for_gridscan_valid(feature_controlled.fgs_motors)
 
     LOGGER.info("Waiting for arming to finish")
-    yield from bps.wait("ready_for_data_collection")
+    yield from bps.wait(CONST.WAIT.GRID_READY_FOR_DC)
     yield from bps.stage(fgs_composite.eiger)
-
-    # This needs to occur after eiger is armed so that
-    # the HDF5 meta file is present for nexgen to inspect
-    with TRACER.start_span("nexus_hardware_readings"):
-        yield from read_hardware_for_nexus_writer(fgs_composite.eiger)
 
     yield from kickoff_and_complete_gridscan(
         feature_controlled.fgs_motors,
@@ -299,6 +298,7 @@ def run_gridscan(
         fgs_composite.synchrotron,
         [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
         parameters.scan_indices,
+        do_during_run=read_during_collection,
     )
     yield from bps.abs_set(feature_controlled.fgs_motors.z_steps, 0, wait=False)
 
@@ -309,6 +309,7 @@ def kickoff_and_complete_gridscan(
     synchrotron: Synchrotron,
     scan_points: list[AxesPoints[Axis]],
     scan_start_indices: list[int],
+    do_during_run: Callable[[], MsgGenerator] | None = None,
 ):
     @TRACER.start_as_current_span(CONST.PLAN.DO_FGS)
     @bpp.set_run_key_decorator(CONST.PLAN.DO_FGS)
@@ -343,6 +344,9 @@ def kickoff_and_complete_gridscan(
         yield from bps.wait(
             ZOCALO_STAGE_GROUP
         )  # Make sure ZocaloResults queue is clear and ready to accept our new data
+        if do_during_run:
+            LOGGER.info(f"Running {do_during_run} during FGS")
+            yield from do_during_run()
         LOGGER.info("completing FGS")
         yield from bps.complete(gridscan, wait=True)
 
