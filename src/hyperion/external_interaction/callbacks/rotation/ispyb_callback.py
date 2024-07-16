@@ -123,15 +123,16 @@ class RotationISPyBCallback(BaseISPyBCallback):
     def _handle_ispyb_hardware_read(self, doc: Event):
         """Use the hardware read values to create the ispyb comment"""
         scan_data_infos = super()._handle_ispyb_hardware_read(doc)
-        motor_positions = [
+        motor_positions_mm = [
             doc["data"]["smargon-x"],
             doc["data"]["smargon-y"],
             doc["data"]["smargon-z"],
         ]
         assert (
             self.params
-        ), "handle_ispyb_hardware_read triggered beore activity_gated_start"
-        comment = f"Sample position: ({motor_positions[0]}, {motor_positions[1]}, {motor_positions[2]}) {self.params.comment} "
+        ), "handle_ispyb_hardware_read triggered before activity_gated_start"
+        motor_positions_um = [position * 1000 for position in motor_positions_mm]
+        comment = f"Sample position (µm): ({motor_positions_um[0]:.0f}, {motor_positions_um[1]:.0f}, {motor_positions_um[2]:.0f}) {self.params.comment} "
         scan_data_infos[0].data_collection_info.comments = comment
         return scan_data_infos
 
