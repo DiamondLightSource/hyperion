@@ -33,7 +33,7 @@ from hyperion.parameters.components import (
 from hyperion.parameters.constants import CONST, I03Constants
 
 
-class RotationScanCore(OptionalGonioAngleStarts, OptionalXyzStarts):
+class RotationScanPerSweep(OptionalGonioAngleStarts, OptionalXyzStarts):
     omega_start_deg: float = Field(default=0)  # type: ignore
     rotation_axis: RotationAxis = Field(default=RotationAxis.OMEGA)
     scan_width_deg: float = Field(default=360, gt=0)
@@ -42,7 +42,7 @@ class RotationScanCore(OptionalGonioAngleStarts, OptionalXyzStarts):
     ispyb_extras: TemporaryIspybExtras | None
 
 
-class RotationScanGeneric(DiffractionExperimentWithSample):
+class RotationExperiment(DiffractionExperimentWithSample):
     shutter_opening_time_s: float = Field(default=CONST.I03.SHUTTER_TIME_S)
     rotation_increment_deg: float = Field(default=0.1, gt=0)
     ispyb_experiment_type: IspybExperimentType = Field(
@@ -79,7 +79,7 @@ class RotationScanGeneric(DiffractionExperimentWithSample):
         )
 
 
-class RotationScan(WithScan, RotationScanCore, RotationScanGeneric):
+class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
     @property
     def ispyb_params(self):  # pyright: ignore
         pos = np.array([self.x_start_um, self.y_start_um, self.z_start_um])
@@ -118,10 +118,10 @@ class RotationScan(WithScan, RotationScanCore, RotationScanGeneric):
         return int(self.scan_width_deg / self.rotation_increment_deg)
 
 
-class MultiRotationScan(RotationScanGeneric, SplitScan):
-    rotation_scans: Annotated[list[RotationScanCore], Len(min_length=1)]
+class MultiRotationScan(RotationExperiment, SplitScan):
+    rotation_scans: Annotated[list[RotationScanPerSweep], Len(min_length=1)]
 
-    def _single_rotation_scan(self, scan: RotationScanCore) -> RotationScan:
+    def _single_rotation_scan(self, scan: RotationScanPerSweep) -> RotationScan:
         params = self.dict()
         del params["rotation_scans"]
         params.update(scan.dict())
@@ -149,10 +149,6 @@ class MultiRotationScan(RotationScanGeneric, SplitScan):
     @property
     def num_images(self):
         return sum(self._num_images_per_scan())
-
-    @property
-    def scan_points(self):
-        return NotImplemented  # TODO: work out how to make the full scanscpec for this
 
     @property
     def scan_indices(self):
