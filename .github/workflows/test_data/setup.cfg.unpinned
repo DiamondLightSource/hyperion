@@ -29,16 +29,10 @@ install_requires =
     opentelemetry-exporter-jaeger
     ophyd
     semver
-    # For databroker
-    humanize
-    pandas
-    xarray
-    doct
-    databroker
     dls-dodal
     pydantic<2.0 # See https://github.com/DiamondLightSource/hyperion/issues/774
     scipy
-    pyzmq<25 # See https://github.com/DiamondLightSource/hyperion/issues/1103
+    pyzmq
 
 [options.entry_points]
 console_scripts =
