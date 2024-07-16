@@ -21,8 +21,8 @@ from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_ispyb_during_collection,
-    read_hardware_for_ispyb_pre_collection,
+    read_hardware_during_collection,
+    read_hardware_pre_collection,
 )
 from hyperion.exceptions import WarningException
 from hyperion.experiment_plans.flyscan_xray_centre_plan import (
@@ -102,10 +102,10 @@ def ispyb_plan(test_fgs_params: ThreeDGridScan):
         }
     )
     def standalone_read_hardware_for_ispyb(
-        und, syn, slits, robot, attn, fl, dcm, ap_sg, sm
+        und, syn, slits, robot, attn, fl, dcm, ap_sg, sm, det
     ):
-        yield from read_hardware_for_ispyb_pre_collection(und, syn, slits, robot, sm)
-        yield from read_hardware_for_ispyb_during_collection(ap_sg, attn, fl, dcm)
+        yield from read_hardware_pre_collection(und, syn, slits, robot, sm)
+        yield from read_hardware_during_collection(ap_sg, attn, fl, dcm, det)
 
     return standalone_read_hardware_for_ispyb
 
@@ -251,6 +251,7 @@ class TestFlyscanXrayCentrePlan:
                     fake_fgs_composite.dcm,
                     fake_fgs_composite.aperture_scatterguard,
                     fake_fgs_composite.smargon,
+                    fake_fgs_composite.eiger,
                 )
             )
             # fmt: off
@@ -983,10 +984,10 @@ class TestFlyscanXrayCentrePlan:
         assert mock_zocalo_trigger.run_end.mock_calls == [call(id_1), call(id_2)]
 
     @patch(
-        "hyperion.experiment_plans.flyscan_xray_centre_plan.kickoff_and_complete_gridscan",
-        new=MagicMock(side_effect=lambda *_, **__: iter([Msg("kickoff_gridscan")])),
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.check_topup_and_wait_if_necessary",
+        new=MagicMock(side_effect=lambda *_, **__: iter([Msg("check_topup")])),
     )
-    def test_read_hardware_for_nexus_occurs_after_eiger_arm(
+    def test_read_hardware_during_collection_occurs_after_eiger_arm(
         self,
         fake_fgs_composite: FlyScanXRayCentreComposite,
         test_fgs_params_panda_zebra: ThreeDGridScan,
@@ -1009,6 +1010,11 @@ class TestFlyscanXrayCentrePlan:
             msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "kickoff"
+            and msg.obj == feature_controlled.fgs_motors,
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "create"
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
@@ -1017,9 +1023,6 @@ class TestFlyscanXrayCentrePlan:
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"
-        )
-        sim_run_engine.assert_message_and_return_remaining(
-            msgs, lambda msg: msg.command == "kickoff_gridscan"
         )
 
     @patch(

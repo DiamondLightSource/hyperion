@@ -16,16 +16,16 @@ from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 
 
-def read_hardware_for_ispyb_pre_collection(
+def read_hardware_pre_collection(
     undulator: Undulator,
     synchrotron: Synchrotron,
     s4_slit_gaps: S4SlitGaps,
     robot: BartRobot,
     smargon: Smargon,
 ):
-    LOGGER.info("Reading status of beamline for ispyb deposition, pre collection.")
+    LOGGER.info("Reading status of beamline for callbacks, pre collection.")
     yield from bps.create(
-        name=CONST.DESCRIPTORS.ISPYB_HARDWARE_READ
+        name=CONST.DESCRIPTORS.HARDWARE_READ_PRE
     )  # gives name to event *descriptor* document
     yield from bps.read(undulator.current_gap)
     yield from bps.read(synchrotron.synchrotron_mode)
@@ -37,23 +37,19 @@ def read_hardware_for_ispyb_pre_collection(
     yield from bps.save()
 
 
-def read_hardware_for_ispyb_during_collection(
+def read_hardware_during_collection(
     aperture_scatterguard: ApertureScatterguard,
     attenuator: Attenuator,
     flux: Flux,
     dcm: DCM,
+    detector: EigerDetector,
 ):
-    LOGGER.info("Reading status of beamline for ispyb deposition, during collection.")
-    yield from bps.create(name=CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ)
+    LOGGER.info("Reading status of beamline for callbacks, during collection.")
+    yield from bps.create(name=CONST.DESCRIPTORS.HARDWARE_READ_DURING)
     yield from bps.read(aperture_scatterguard)
     yield from bps.read(attenuator.actual_transmission)
     yield from bps.read(flux.flux_reading)
     yield from bps.read(dcm.energy_in_kev)
-    yield from bps.save()
-
-
-def read_hardware_for_nexus_writer(detector: EigerDetector):
-    yield from bps.create(name=CONST.DESCRIPTORS.NEXUS_READ)
     yield from bps.read(detector.bit_depth)
     yield from bps.save()
 

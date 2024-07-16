@@ -18,8 +18,8 @@ from ophyd.status import Status
 from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
-    read_hardware_for_ispyb_during_collection,
-    read_hardware_for_ispyb_pre_collection,
+    read_hardware_during_collection,
+    read_hardware_pre_collection,
 )
 from hyperion.device_setup_plans.xbpm_feedback import (
     transmission_and_xbpm_feedback_for_collection_decorator,
@@ -134,16 +134,16 @@ def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
 
 @pytest.mark.asyncio
 @pytest.mark.s03
-def test_read_hardware_for_ispyb_pre_collection(
+def test_read_hardware_pre_collection(
     RE: RunEngine,
     fxc_composite: FlyScanXRayCentreComposite,
 ):
     @bpp.run_decorator()
     def read_run(u, s, g, r, a, f, dcm, ap_sg, sm):
-        yield from read_hardware_for_ispyb_pre_collection(
+        yield from read_hardware_pre_collection(
             undulator=u, synchrotron=s, s4_slit_gaps=g, robot=r, smargon=sm
         )
-        yield from read_hardware_for_ispyb_during_collection(ap_sg, a, f, dcm)
+        yield from read_hardware_during_collection(ap_sg, a, f, dcm)
 
     RE(
         read_run(

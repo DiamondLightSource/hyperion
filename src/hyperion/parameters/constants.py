@@ -48,9 +48,8 @@ class DocDescriptorNames:
     # For callbacks to use
     OAV_ROTATION_SNAPSHOT_TRIGGERED = "rotation_snapshot_triggered"
     OAV_GRID_SNAPSHOT_TRIGGERED = "snapshot_to_ispyb"
-    NEXUS_READ = "nexus_read_plan"
-    ISPYB_HARDWARE_READ = "ispyb_reading_hardware"
-    ISPYB_TRANSMISSION_FLUX_READ = "ispyb_update_transmission_flux"
+    HARDWARE_READ_PRE = "read_hardware_for_callbacks_pre_collection"
+    HARDWARE_READ_DURING = "read_hardware_for_callbacks_during_collection"
     ZOCALO_HW_READ = "zocalo_read_hardware_plan"
 
 

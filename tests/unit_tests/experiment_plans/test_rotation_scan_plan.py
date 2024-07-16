@@ -297,7 +297,7 @@ def test_rotation_plan_reads_hardware(
     msgs = sim_run_engine.assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "create"
-        and msg.kwargs["name"] == CONST.DESCRIPTORS.ISPYB_HARDWARE_READ,
+        and msg.kwargs["name"] == CONST.DESCRIPTORS.HARDWARE_READ_PRE,
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     sim_run_engine.assert_message_and_return_remaining(

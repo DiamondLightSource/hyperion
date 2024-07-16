@@ -86,9 +86,9 @@ class BaseISPyBCallback(PlanReactiveCallback):
             )
             return doc
         match event_descriptor.get("name"):
-            case CONST.DESCRIPTORS.ISPYB_HARDWARE_READ:
+            case CONST.DESCRIPTORS.HARDWARE_READ_PRE:
                 scan_data_infos = self._handle_ispyb_hardware_read(doc)
-            case CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ:
+            case CONST.DESCRIPTORS.HARDWARE_READ_DURING:
                 scan_data_infos = self._handle_ispyb_transmission_flux_read(doc)
             case _:
                 return self._tag_doc(doc)
