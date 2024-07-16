@@ -546,7 +546,7 @@ def test_when_context_created_then_contains_expected_number_of_plans(
     get_beamline_parameters,
 ):
     with patch.dict(os.environ, {"BEAMLINE": "i03"}):
-        context = setup_context(wait_for_connection=False, fake_with_ophyd_sim=True)
+        context = setup_context(wait_for_connection=False)
 
         plan_names = context.plans.keys()
 
