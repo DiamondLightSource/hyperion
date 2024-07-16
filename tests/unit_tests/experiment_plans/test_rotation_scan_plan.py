@@ -231,7 +231,7 @@ async def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
         get_mock_put(motor.user_setpoint).assert_not_called()  # type: ignore
 
 
-@patch("hyperion.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)
+@patch("hyperion.experiment_plans.rotation_scan_plan._cleanup_plan", autospec=True)
 @patch("bluesky.plan_stubs.wait", autospec=True)
 def test_cleanup_happens(
     bps_wait: MagicMock,
@@ -284,11 +284,11 @@ def test_rotation_plan_reads_hardware(
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
     sim_run_engine_for_rotation.assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_x"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-x"
     )
     sim_run_engine_for_rotation.assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_y"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-y"
     )
     sim_run_engine_for_rotation.assert_message_and_return_remaining(
-        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon_z"
+        msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-z"
     )

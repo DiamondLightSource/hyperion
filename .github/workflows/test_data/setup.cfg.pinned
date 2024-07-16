@@ -31,7 +31,6 @@ install_requires =
     semver == 3.0.2
     # For databroker
     humanize == 4.9.0
-    pandas == 2.2.0
     xarray == 2024.1.1
     doct == 1.1.0
     databroker == 1.2.5

@@ -53,12 +53,13 @@ def test_multi_rotation_scan_params():
         assert params.scan_indices
 
 
-def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
+async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
     fake_create_rotation_devices: RotationScanComposite,
     test_multi_rotation_params: MultiRotationScan,
     sim_run_engine_for_rotation: RunEngineSimulator,
 ):
-    omega = fake_create_rotation_devices.smargon.omega
+    smargon = fake_create_rotation_devices.smargon
+    omega = smargon.omega
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode, SynchrotronMode.USER
     )
@@ -95,17 +96,19 @@ def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
 
     for scan in test_multi_rotation_params.single_rotation_scans:
         motion_values = calculate_motion_profile(
-            scan, int(omega.acceleration.get()), int(omega.max_velocity.get())
+            scan,
+            (await omega.acceleration_time.get_value()),
+            (await omega.max_velocity.get_value()),
         )
         # moving to the start position
         msgs_within_arming = _assert_set_seq_and_return_remaining(
             msgs_within_arming,
             [
-                ("smargon_x", scan.x_start_um),
-                ("smargon_y", scan.y_start_um),
-                ("smargon_z", scan.z_start_um),
-                ("smargon_phi", scan.phi_start_deg),
-                ("smargon_chi", scan.chi_start_deg),
+                ("smargon-x", scan.x_start_um),
+                ("smargon-y", scan.y_start_um),
+                ("smargon-z", scan.z_start_um),
+                ("smargon-phi", scan.phi_start_deg),
+                ("smargon-chi", scan.chi_start_deg),
             ],
         )
         # arming the zebra
@@ -119,7 +122,7 @@ def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         sim_run_engine_for_rotation.assert_message_and_return_remaining(
             msgs_within_arming,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "smargon_omega"
+            and msg.obj.name == "smargon-omega"
             and msg.args
             == (
                 (scan.scan_width_deg + motion_values.shutter_opening_deg)
@@ -181,18 +184,18 @@ def test_full_multi_rotation_plan_docs_emitted(
         )
         params = RotationScan(**json.loads(scan_docs[0][1]["hyperion_parameters"]))
         assert params == scan
-        assert len(events := CallbackSim.get_matches(scan_docs, "event")) == 4
+        assert len(events := CallbackSim.get_matches(scan_docs, "event")) == 3
         CallbackSim.assert_events_and_data_in_order(
             events,
             [
                 ["eiger_odin_file_writer_id"],
-                ["undulator-current_gap", "synchrotron-synchrotron_mode", "smargon_x"],
+                ["undulator-current_gap", "synchrotron-synchrotron_mode", "smargon-x"],
                 [
                     "attenuator-actual_transmission",
                     "flux_flux_reading",
                     "dcm-energy_in_kev",
+                    "eiger_bit_depth",
                 ],
-                ["eiger_bit_depth"],
             ],
         )
         inner_run_docs = CallbackSim.get_docs_from(
