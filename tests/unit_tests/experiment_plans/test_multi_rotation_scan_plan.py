@@ -11,6 +11,7 @@ import h5py
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd_async.core import set_mock_value
 
@@ -57,6 +58,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
     fake_create_rotation_devices: RotationScanComposite,
     test_multi_rotation_params: MultiRotationScan,
     sim_run_engine_for_rotation: RunEngineSimulator,
+    oav_parameters_for_rotation: OAVParameters,
 ):
     smargon = fake_create_rotation_devices.smargon
     omega = smargon.omega
@@ -64,7 +66,11 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         fake_create_rotation_devices.synchrotron.synchrotron_mode, SynchrotronMode.USER
     )
     msgs = sim_run_engine_for_rotation.simulate_plan(
-        multi_rotation_scan(fake_create_rotation_devices, test_multi_rotation_params)
+        multi_rotation_scan(
+            fake_create_rotation_devices,
+            test_multi_rotation_params,
+            oav_parameters_for_rotation,
+        )
     )
 
     msgs = sim_run_engine_for_rotation.assert_message_and_return_remaining(
@@ -136,21 +142,27 @@ def _run_multi_rotation_plan(
     params: MultiRotationScan,
     devices: RotationScanComposite,
     callbacks: Sequence[Callable[[str, dict[str, Any]], Any]],
+    oav_params: OAVParameters,
 ):
     for cb in callbacks:
         RE.subscribe(cb)
     with patch("bluesky.preprocessors.__read_and_stash_a_motor", fake_read):
-        RE(multi_rotation_scan(devices, params))
+        RE(multi_rotation_scan(devices, params, oav_params))
 
 
 def test_full_multi_rotation_plan_docs_emitted(
     RE: RunEngine,
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
 ):
     callback_sim = CallbackSim()
     _run_multi_rotation_plan(
-        RE, test_multi_rotation_params, fake_create_rotation_devices, [callback_sim]
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [callback_sim],
+        oav_parameters_for_rotation,
     )
     docs = callback_sim.docs_received
 
@@ -211,10 +223,15 @@ def test_full_multi_rotation_plan_nexus_writer_called_correctly(
     RE: RunEngine,
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
 ):
     callback = RotationNexusFileCallback()
     _run_multi_rotation_plan(
-        RE, test_multi_rotation_params, fake_create_rotation_devices, [callback]
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [callback],
+        oav_parameters_for_rotation,
     )
     nexus_writer_calls = mock_nexus_writer.call_args_list
     first_run_number = test_multi_rotation_params.detector_params.run_number
@@ -237,6 +254,7 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
     RE: RunEngine,
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
     tmpdir,
 ):
     multi_params = test_multi_rotation_params
@@ -252,7 +270,13 @@ def test_full_multi_rotation_plan_nexus_files_written_correctly(
     meta_filename = f"{prefix}_{meta_data_run_number}_meta.h5"
 
     callback = RotationNexusFileCallback()
-    _run_multi_rotation_plan(RE, multi_params, fake_create_rotation_devices, [callback])
+    _run_multi_rotation_plan(
+        RE,
+        multi_params,
+        fake_create_rotation_devices,
+        [callback],
+        oav_parameters_for_rotation,
+    )
 
     def _expected_dset_number(image_number: int):
         # image numbers 0-999 are in dset 1, etc.
@@ -346,11 +370,16 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
     RE: RunEngine,
     test_multi_rotation_params: MultiRotationScan,
     fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
 ):
     callback = RotationISPyBCallback()
     mock_ispyb_store.return_value = MagicMock(spec=StoreInIspyb)
     _run_multi_rotation_plan(
-        RE, test_multi_rotation_params, fake_create_rotation_devices, [callback]
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [callback],
+        oav_parameters_for_rotation,
     )
     ispyb_calls = mock_ispyb_store.call_args_list
     for instantiation_call, ispyb_store_calls, rotation_params in zip(

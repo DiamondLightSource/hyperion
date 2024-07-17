@@ -40,6 +40,7 @@ class PlanGroupCheckpointConstants:
     # For places to synchronise / stop and wait in plans, use as bluesky group names
     # Gridscan
     GRID_READY_FOR_DC = "ready_for_data_collection"
+    MOVE_GONIO_TO_START = "move_gonio_to_start"
 
 
 @dataclass(frozen=True)

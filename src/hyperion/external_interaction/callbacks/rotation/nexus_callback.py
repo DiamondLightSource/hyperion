@@ -69,7 +69,7 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             )
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
             self.writer.create_nexus_file(vds_data_type)
-            NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")
+            NEXUS_LOGGER.info(f"Nexus file created at {self.writer.data_filename}")
         return doc
 
     def activity_gated_start(self, doc: RunStart):

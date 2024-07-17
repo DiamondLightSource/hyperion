@@ -219,6 +219,7 @@ def rotation_scan_plan(
 
         LOGGER.info("Wait for any previous moves...")
         # wait for all the setup tasks at once
+        yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
         yield from bps.wait("setup_senv")
         yield from bps.wait("move_to_rotation_start")
 
@@ -282,15 +283,16 @@ def _move_and_rotation(
         params.x_start_um,
         params.y_start_um,
         params.z_start_um,
-        group="move_gonio_to_start",
+        group=CONST.WAIT.MOVE_GONIO_TO_START,
     )
     yield from move_phi_chi_omega(
         composite.smargon,
         params.phi_start_deg,
         params.chi_start_deg,
-        group="move_gonio_to_start",
+        group=CONST.WAIT.MOVE_GONIO_TO_START,
     )
     if params.take_snapshots:
+        yield from bps.wait(CONST.WAIT.MOVE_GONIO_TO_START)
         yield from setup_oav_snapshot_plan(
             composite, params, motion_values.max_velocity_deg_s
         )

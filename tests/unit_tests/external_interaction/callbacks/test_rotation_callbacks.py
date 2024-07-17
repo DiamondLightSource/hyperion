@@ -174,7 +174,7 @@ def test_nexus_handler_only_writes_once(
     params: RotationScan,
     test_outer_start_doc,
 ):
-    nexus_writer.return_value.full_filename = "test_full_filename"
+    nexus_writer.return_value.data_filename = "test_full_filename"
     cb = RotationNexusFileCallback()
     cb.active = True
     RE(fake_rotation_scan(params, [cb]))
@@ -223,7 +223,7 @@ def test_zocalo_start_and_end_not_triggered_if_ispyb_ids_not_present(
     params: RotationScan,
     test_outer_start_doc,
 ):
-    nexus_writer.return_value.full_filename = "test_full_filename"
+    nexus_writer.return_value.data_filename = "test_full_filename"
     nexus_callback, ispyb_callback = create_rotation_callbacks()
     activate_callbacks((nexus_callback, ispyb_callback))
 
@@ -258,7 +258,7 @@ def test_ispyb_starts_on_opening_and_zocalo_on_main_so_ispyb_triggered_before_zo
     mock_store_in_ispyb_instance.update_deposition.return_value = returned_ids
 
     ispyb_store.return_value = mock_store_in_ispyb_instance
-    nexus_writer.return_value.full_filename = "test_full_filename"
+    nexus_writer.return_value.data_filename = "test_full_filename"
     nexus_callback, ispyb_callback = create_rotation_callbacks()
     activate_callbacks((nexus_callback, ispyb_callback))
     ispyb_callback.emit_cb.stop = MagicMock()  # type: ignore

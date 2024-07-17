@@ -385,7 +385,7 @@ def test_rotation_scan_moves_gonio_to_start_before_snapshots(
     msgs = sim_run_engine.assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == "move_gonio_to_start",
+        and msg.kwargs["group"] == CONST.WAIT.MOVE_GONIO_TO_START,
     )
     msgs = sim_run_engine.assert_message_and_return_remaining(
         msgs,
