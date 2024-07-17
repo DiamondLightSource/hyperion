@@ -152,7 +152,7 @@ def test_full_multi_rotation_plan_docs_emitted(
     _run_multi_rotation_plan(
         RE, test_multi_rotation_params, fake_create_rotation_devices, [callback_sim]
     )
-    docs = callback_sim.docs_recieved
+    docs = callback_sim.docs_received
 
     assert (
         outer_plan_start_doc := CallbackSim.assert_doc(

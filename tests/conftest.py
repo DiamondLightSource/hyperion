@@ -888,10 +888,10 @@ def sim_run_engine():
 
 class CallbackSim:
     def __init__(self) -> None:
-        self.docs_recieved: list[tuple[str, dict[str, Any]]] = []
+        self.docs_received: list[tuple[str, dict[str, Any]]] = []
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        self.docs_recieved.append((args[0], args[1]))
+        self.docs_received.append((args[0], args[1]))
 
     @staticmethod
     def is_match(
@@ -943,7 +943,7 @@ class CallbackSim:
             assert matches == []
 
     @staticmethod
-    def assert_doc_return_rematining(
+    def assert_doc_return_remaining(
         docs: list[tuple[str, dict[str, Any]]],
         name: str,
         has_fields: Sequence[str] = [],
@@ -951,11 +951,11 @@ class CallbackSim:
         does_exist: bool = True,
     ):
         """Assert that a matching doc has been recieved by the sim,
-        and returns the first match if it is meant to exist"""
+        and returns all matches"""
         matches = CallbackSim.get_matches(docs, name, has_fields, matches_fields)
         if does_exist:
             assert matches
-            return matches[0]
+            return matches
         else:
             assert matches == []
 

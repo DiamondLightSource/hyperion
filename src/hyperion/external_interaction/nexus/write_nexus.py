@@ -55,11 +55,10 @@ class NexusWriter:
         self.filename: str = parameters.file_name
         self.start_index: int = vds_start_index
         self.full_num_of_images: int = full_num_of_images or parameters.num_images
-        self.full_filename: str = parameters.detector_params.full_filename
         self.data_filename: str = (
             f"{self.filename}_{meta_data_run_number}"
             if meta_data_run_number
-            else self.full_filename
+            else parameters.detector_params.full_filename
         )
         self.nexus_file: Path = (
             self.directory / f"{self.filename}_{self.run_number}.nxs"

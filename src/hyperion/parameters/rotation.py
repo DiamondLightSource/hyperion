@@ -92,7 +92,7 @@ class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
                 else []
             ),
             ispyb_experiment_type=self.ispyb_experiment_type,
-            position=pos if np.all(pos) else None,
+            position=pos if np.any(pos) else None,
         )
 
     @property
