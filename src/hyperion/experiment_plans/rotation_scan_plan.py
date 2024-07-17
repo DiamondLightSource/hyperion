@@ -12,6 +12,8 @@ from dodal.devices.dcm import DCM
 from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
+from dodal.devices.oav.oav_detector import OAV
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
@@ -21,6 +23,7 @@ from dodal.devices.zebra import RotationDirection, Zebra
 from dodal.plans.check_topup import check_topup_and_wait_if_necessary
 
 from hyperion.device_setup_plans.manipulate_sample import (
+    begin_sample_environment_setup,
     cleanup_sample_environment,
     move_phi_chi_omega,
     move_x_y_z,
@@ -37,6 +40,11 @@ from hyperion.device_setup_plans.setup_zebra import (
     make_trigger_safe,
     setup_zebra_for_rotation,
 )
+from hyperion.experiment_plans.oav_snapshot_plan import (
+    OavSnapshotComposite,
+    oav_snapshot_plan,
+    setup_oav_snapshot_plan,
+)
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import (
@@ -50,7 +58,7 @@ from hyperion.utils.context import device_composite_from_context
 
 
 @dataclasses.dataclass
-class RotationScanComposite:
+class RotationScanComposite(OavSnapshotComposite):
     """All devices which are directly or indirectly required by this plan"""
 
     aperture_scatterguard: ApertureScatterguard
@@ -66,6 +74,7 @@ class RotationScanComposite:
     synchrotron: Synchrotron
     s4_slit_gaps: S4SlitGaps
     zebra: Zebra
+    oav: OAV
 
     def __post_init__(self):
         """Ensure that aperture positions are loaded whenever this class is created."""
@@ -162,9 +171,9 @@ def rotation_scan_plan(
     params: RotationScan,
     motion_values: RotationMotionProfile,
 ):
-    """A plan to collect diffraction images from a sample continuously rotating about
-    a fixed axis - for now this axis is limited to omega. Only does the scan itself, no
-    setup tasks."""
+    """A stub plan to collect diffraction images from a sample continuously rotating
+    about a fixed axis - for now this axis is limited to omega.
+    Needs additional setup of the sample environment and a wrapper to clean up."""
 
     @bpp.set_run_key_decorator(CONST.PLAN.ROTATION_MAIN)
     @bpp.run_decorator(
@@ -174,22 +183,23 @@ def rotation_scan_plan(
         }
     )
     def _rotation_scan_plan(
-        motion_values: RotationMotionProfile, composite: RotationScanComposite
+        motion_values: RotationMotionProfile,
+        composite: RotationScanComposite,
     ):
         axis = composite.smargon.omega
 
-        LOGGER.info(f"moving omega to beginning, {motion_values.start_scan_deg=}")
         # can move to start as fast as possible
-        # TODO get VMAX, see https://github.com/bluesky/ophyd/issues/1122
         yield from bps.abs_set(
             axis.velocity, motion_values.max_velocity_deg_s, wait=True
         )
+        LOGGER.info(f"moving omega to beginning, {motion_values.start_scan_deg=}")
         yield from bps.abs_set(
             axis,
             motion_values.start_motion_deg,
             group="move_to_rotation_start",
             wait=True,
         )
+
         yield from setup_zebra_for_rotation(
             composite.zebra,
             start_angle=motion_values.start_scan_deg,
@@ -201,10 +211,15 @@ def rotation_scan_plan(
             wait=True,
         )
 
+        yield from setup_sample_environment(
+            composite.aperture_scatterguard,
+            params.selected_aperture,
+            composite.backlight,
+        )
+
         LOGGER.info("Wait for any previous moves...")
         # wait for all the setup tasks at once
         yield from bps.wait("setup_senv")
-        yield from bps.wait("move_gonio_to_start")
         yield from bps.wait("move_to_rotation_start")
 
         # get some information for the ispyb deposition and trigger the callback
@@ -259,6 +274,7 @@ def _move_and_rotation(
     composite: RotationScanComposite,
     params: RotationScan,
     motion_values: RotationMotionProfile,
+    oav_params: OAVParameters,
 ):
     LOGGER.info("moving to position (if specified)")
     yield from move_x_y_z(
@@ -274,6 +290,11 @@ def _move_and_rotation(
         params.chi_start_deg,
         group="move_gonio_to_start",
     )
+    if params.take_snapshots:
+        yield from setup_oav_snapshot_plan(
+            composite, params, motion_values.max_velocity_deg_s
+        )
+        yield from oav_snapshot_plan(composite, params, oav_params)
     yield from rotation_scan_plan(
         composite,
         params,
@@ -284,7 +305,11 @@ def _move_and_rotation(
 def rotation_scan(
     composite: RotationScanComposite,
     parameters: RotationScan,
+    oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
+    if not oav_params:
+        oav_params = OAVParameters(context="xrayCentring")
+
     @bpp.set_run_key_decorator("rotation_scan")
     @bpp.run_decorator(  # attach experiment metadata to the start document
         md={
@@ -317,16 +342,14 @@ def rotation_scan(
         def rotation_with_cleanup_and_stage(params: RotationScan):
             assert composite.aperture_scatterguard.aperture_positions is not None
             LOGGER.info("setting up sample environment...")
-            yield from setup_sample_environment(
-                composite.aperture_scatterguard,
-                params.selected_aperture,
+            yield from begin_sample_environment_setup(
                 composite.detector_motion,
-                composite.backlight,
                 composite.attenuator,
                 params.transmission_frac,
                 params.detector_params.detector_distance,
             )
-            yield from _move_and_rotation(composite, params, motion_values)
+
+            yield from _move_and_rotation(composite, params, motion_values, oav_params)
 
         LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
@@ -337,7 +360,10 @@ def rotation_scan(
 def multi_rotation_scan(
     composite: RotationScanComposite,
     parameters: MultiRotationScan,
+    oav_params: OAVParameters | None = None,
 ) -> MsgGenerator:
+    if not oav_params:
+        oav_params = OAVParameters(context="xrayCentring")
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
     max_vel = (
@@ -345,11 +371,8 @@ def multi_rotation_scan(
     )
     assert composite.aperture_scatterguard.aperture_positions is not None
     LOGGER.info("setting up sample environment...")
-    yield from setup_sample_environment(
-        composite.aperture_scatterguard,
-        parameters.selected_aperture,
+    yield from begin_sample_environment_setup(
         composite.detector_motion,
-        composite.backlight,
         composite.attenuator,
         parameters.transmission_frac,
         parameters.detector_params.detector_distance,
@@ -395,8 +418,9 @@ def multi_rotation_scan(
                     motor_time_to_speed,
                     max_vel,
                 )
-
-                yield from _move_and_rotation(composite, params, motion_values)
+                yield from _move_and_rotation(
+                    composite, params, motion_values, oav_params
+                )
 
             yield from rotation_scan_core(single_scan)
 
