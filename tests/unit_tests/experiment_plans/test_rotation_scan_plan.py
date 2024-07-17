@@ -11,7 +11,7 @@ from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zebra import Zebra
-from ophyd_async.core import get_mock_put, set_mock_value
+from ophyd_async.core import get_mock_put
 
 from hyperion.experiment_plans.oav_snapshot_plan import (
     OAV_SNAPSHOT_GROUP,
