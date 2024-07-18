@@ -199,9 +199,9 @@ async def test_full_rotation_plan_smargon_settings(
 
     assert await smargon.phi.user_readback.get_value() == params.phi_start_deg
     assert await smargon.chi.user_readback.get_value() == params.chi_start_deg
-    assert await smargon.x.user_readback.get_value() == params.x_start_um
-    assert await smargon.y.user_readback.get_value() == params.y_start_um
-    assert await smargon.z.user_readback.get_value() == params.z_start_um
+    assert await smargon.x.user_readback.get_value() == params.x_start_um / 1000  # type: ignore
+    assert await smargon.y.user_readback.get_value() == params.y_start_um / 1000  # type: ignore
+    assert await smargon.z.user_readback.get_value() == params.z_start_um / 1000  # type: ignore
     assert (
         # 4 * snapshots, restore omega, 1 * rotation sweep
         omega_set.call_count == 4 + 1 + 1

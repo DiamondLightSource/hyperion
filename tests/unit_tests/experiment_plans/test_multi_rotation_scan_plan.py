@@ -112,9 +112,9 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         msgs_within_arming = _assert_set_seq_and_return_remaining(
             msgs_within_arming,
             [
-                ("smargon-x", scan.x_start_um),
-                ("smargon-y", scan.y_start_um),
-                ("smargon-z", scan.z_start_um),
+                ("smargon-x", scan.x_start_um / 1000),  # type: ignore
+                ("smargon-y", scan.y_start_um / 1000),  # type: ignore
+                ("smargon-z", scan.z_start_um / 1000),  # type: ignore
                 ("smargon-phi", scan.phi_start_deg),
                 ("smargon-chi", scan.chi_start_deg),
             ],
