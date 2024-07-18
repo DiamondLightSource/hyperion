@@ -37,6 +37,7 @@ from ...conftest import (
     fake_read,
     raw_params_from_file,
 )
+from ..external_interaction.conftest import *  # noqa
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
@@ -395,3 +396,47 @@ def test_full_multi_rotation_plan_ispyb_called_correctly(
         assert ispyb_store_calls[1][0] == "update_deposition"
         assert ispyb_store_calls[2][0] == "update_deposition"
         assert ispyb_store_calls[3][0] == "end_deposition"
+
+
+def test_full_multi_rotation_plan_ispyb_interaction_end_to_end(
+    mock_ispyb_conn_multiscan,
+    RE: RunEngine,
+    test_multi_rotation_params: MultiRotationScan,
+    fake_create_rotation_devices: RotationScanComposite,
+    oav_parameters_for_rotation: OAVParameters,
+):
+    number_of_scans = len(test_multi_rotation_params.rotation_scans)
+    callback = RotationISPyBCallback()
+    _run_multi_rotation_plan(
+        RE,
+        test_multi_rotation_params,
+        fake_create_rotation_devices,
+        [callback],
+        oav_parameters_for_rotation,
+    )
+    mx = mx_acquisition_from_conn(mock_ispyb_conn_multiscan)
+    assert mx.get_data_collection_group_params.call_count == number_of_scans
+    assert mx.get_data_collection_params.call_count == number_of_scans * 4
+    for upsert_calls, rotation_params in zip(
+        [  # there should be 4 datacollection upserts per scan
+            mx.upsert_data_collection.call_args_list[i * 4 : (i + 1) * 4]
+            for i in range(len(test_multi_rotation_params.rotation_scans))
+        ],
+        test_multi_rotation_params.single_rotation_scans,
+    ):
+        first_upsert_data = upsert_calls[0].args[0]
+        assert (
+            first_upsert_data[12] - first_upsert_data[11]
+            == rotation_params.scan_width_deg
+        )
+        assert first_upsert_data[15] == rotation_params.num_images
+        second_upsert_data = upsert_calls[1].args[0]
+        assert second_upsert_data[29].startswith("Sample position")
+        position_string = f"{rotation_params.x_start_um:.0f}, {rotation_params.y_start_um:.0f}, {rotation_params.z_start_um:.0f}"
+        assert position_string in second_upsert_data[29]
+        third_upsert_data = upsert_calls[2].args[0]
+        assert third_upsert_data[24] > 0  # resolution
+        assert third_upsert_data[52] > 0  # beam size
+        fourth_upsert_data = upsert_calls[3].args[0]
+        assert fourth_upsert_data[9]  # timestamp
+        assert fourth_upsert_data[10] == "DataCollection Successful"

@@ -82,22 +82,22 @@ def cleanup_sample_environment(
 
 def move_x_y_z(
     smargon: Smargon,
-    x: float | None = None,
-    y: float | None = None,
-    z: float | None = None,
+    x_mm: float | None = None,
+    y_mm: float | None = None,
+    z_mm: float | None = None,
     wait=False,
     group="move_x_y_z",
 ):
     """Move the x, y, and z axes of the given smargon to the specified position. All
     axes are optional."""
 
-    LOGGER.info(f"Moving smargon to x, y, z: {(x, y, z)}")
-    if x:
-        yield from bps.abs_set(smargon.x, x, group=group)
-    if y:
-        yield from bps.abs_set(smargon.y, y, group=group)
-    if z:
-        yield from bps.abs_set(smargon.z, z, group=group)
+    LOGGER.info(f"Moving smargon to x, y, z: {(x_mm, y_mm, z_mm)}")
+    if x_mm:
+        yield from bps.abs_set(smargon.x, x_mm, group=group)
+    if y_mm:
+        yield from bps.abs_set(smargon.y, y_mm, group=group)
+    if z_mm:
+        yield from bps.abs_set(smargon.z, z_mm, group=group)
     if wait:
         yield from bps.wait(group)
 

@@ -277,12 +277,15 @@ def _move_and_rotation(
     motion_values: RotationMotionProfile,
     oav_params: OAVParameters,
 ):
+    def _div_by_1000_if_not_none(num: float | None):
+        return num / 1000 if num else num
+
     LOGGER.info("moving to position (if specified)")
     yield from move_x_y_z(
         composite.smargon,
-        params.x_start_um,
-        params.y_start_um,
-        params.z_start_um,
+        _div_by_1000_if_not_none(params.x_start_um),
+        _div_by_1000_if_not_none(params.y_start_um),
+        _div_by_1000_if_not_none(params.z_start_um),
         group=CONST.WAIT.MOVE_GONIO_TO_START,
     )
     yield from move_phi_chi_omega(
