@@ -221,7 +221,7 @@ def robot_load_then_centre_plan(
                 BartRobot.LOAD_TOLERANCE_MM,
                 CONST.HARDWARE.CRYOJET_MARGIN_MM,
                 "lower_gonio",
-                False,
+                wait_for_all=False,
             ),
             except_plan=raise_exception_if_moved_out_of_cryojet,
         )
