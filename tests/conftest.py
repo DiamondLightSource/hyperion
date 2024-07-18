@@ -954,23 +954,6 @@ class CallbackSim:
             assert matches == []
 
     @staticmethod
-    def assert_doc_return_remaining(
-        docs: list[tuple[str, dict[str, Any]]],
-        name: str,
-        has_fields: Sequence[str] = [],
-        matches_fields: dict[str, Any] = {},
-        does_exist: bool = True,
-    ):
-        """Assert that a matching doc has been recieved by the sim,
-        and returns all matches"""
-        matches = CallbackSim.get_matches(docs, name, has_fields, matches_fields)
-        if does_exist:
-            assert matches
-            return matches
-        else:
-            assert matches == []
-
-    @staticmethod
     def get_docs_until(
         docs: list[tuple[str, dict[str, Any]]],
         name: str,
