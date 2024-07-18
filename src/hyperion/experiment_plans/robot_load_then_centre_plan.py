@@ -239,7 +239,6 @@ def robot_load_then_centre_plan(
         yield from bps.read(composite.webcam)
         yield from bps.save()
 
-        yield from wait_for_smargon_not_disabled(composite.smargon)
         yield from bps.wait("reset-lower_gonio")
 
     yield from robot_load_and_snapshots()
