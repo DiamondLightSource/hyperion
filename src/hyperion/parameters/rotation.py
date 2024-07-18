@@ -122,9 +122,12 @@ class MultiRotationScan(RotationExperiment, SplitScan):
     rotation_scans: Annotated[list[RotationScanPerSweep], Len(min_length=1)]
 
     def _single_rotation_scan(self, scan: RotationScanPerSweep) -> RotationScan:
+        # self has everything from RotationExperiment
         params = self.dict()
         del params["rotation_scans"]
+        # provided `scan` has everything from RotationScanPerSweep
         params.update(scan.dict())
+        # together they have everything for RotationScan
         return RotationScan(**params)
 
     @root_validator(pre=False)
