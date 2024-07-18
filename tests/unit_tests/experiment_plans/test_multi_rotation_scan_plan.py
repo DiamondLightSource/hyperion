@@ -37,7 +37,8 @@ from ...conftest import (
     fake_read,
     raw_params_from_file,
 )
-from ..external_interaction.conftest import *  # noqa
+from ..external_interaction.conftest import *  # noqa # for fixtures
+from ..external_interaction.conftest import mx_acquisition_from_conn
 
 TEST_OFFSET = 1
 TEST_SHUTTER_OPENING_DEGREES = 2.5
