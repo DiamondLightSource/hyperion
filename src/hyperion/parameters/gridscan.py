@@ -11,7 +11,7 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
@@ -133,6 +133,7 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
     x_steps: int = Field(gt=0)
     y_steps: int = Field(gt=0)
     z_steps: int = Field(gt=0)
+    _set_stub_offsets: bool = PrivateAttr(default_factory=lambda: False)
 
     @property
     def FGS_params(self) -> ZebraGridScanParams:
@@ -175,6 +176,9 @@ class ThreeDGridScan(SpecifiedGridScan, SplitScan):
             run_up_distance_mm=self.panda_runup_distance_mm,
             transmission_fraction=self.transmission_frac,
         )
+
+    def do_set_stub_offsets(self, value: bool):
+        self._set_stub_offsets = value
 
     @property
     def grid_1_spec(self):

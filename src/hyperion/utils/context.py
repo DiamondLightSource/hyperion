@@ -70,16 +70,13 @@ def device_composite_from_context(context: BlueskyContext, dc: Type[DT]) -> DT:
     return dc(**devices)
 
 
-def setup_context(
-    wait_for_connection: bool = True, fake_with_ophyd_sim: bool = False
-) -> BlueskyContext:
+def setup_context(wait_for_connection: bool = True) -> BlueskyContext:
     context = BlueskyContext()
     context.with_plan_module(hyperion_plans)
 
     context.with_dodal_module(
         get_beamline_based_on_environment_variable(),
         wait_for_connection=wait_for_connection,
-        fake_with_ophyd_sim=fake_with_ophyd_sim,
     )
 
     LOGGER.info(f"Plans found in context: {context.plan_functions.keys()}")

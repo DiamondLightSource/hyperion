@@ -86,6 +86,12 @@ class TestData:
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 2666604299.928203,
         "data": {
+            "aperture_scatterguard-selected_aperture": {
+                "name": "Medium",
+                "GDA_name": "MEDIUM",
+                "radius_microns": 50,
+                "location": (15, 16, 2, 18, 19),
+            },
             "attenuator-actual_transmission": 0.98,
             "flux_flux_reading": 9.81,
             "dcm-energy_in_kev": 11.105,
@@ -136,22 +142,17 @@ class TestData:
     test_descriptor_document_pre_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.DESCRIPTORS.ISPYB_HARDWARE_READ,
+        "name": CONST.DESCRIPTORS.HARDWARE_READ_PRE,
     }  # type: ignore
     test_descriptor_document_during_data_collection: EventDescriptor = {
         "uid": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.DESCRIPTORS.ISPYB_TRANSMISSION_FLUX_READ,
+        "name": CONST.DESCRIPTORS.HARDWARE_READ_DURING,
     }  # type: ignore
     test_descriptor_document_zocalo_hardware: EventDescriptor = {
         "uid": "f082901b-7453-4150-8ae5-c5f98bb34406",
         "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
         "name": CONST.DESCRIPTORS.ZOCALO_HW_READ,
-    }  # type: ignore
-    test_descriptor_document_nexus_read: EventDescriptor = {
-        "uid": "aaaaaa",
-        "run_start": "d8bee3ee-f614-4e7a-a516-25d6b9e87ef3",
-        "name": CONST.DESCRIPTORS.NEXUS_READ,
     }  # type: ignore
     test_event_document_oav_rotation_snapshot: Event = {
         "descriptor": "c7d698ce-6d49-4c56-967e-7d081f964573",
@@ -178,7 +179,7 @@ class TestData:
             "oav_grid_snapshot_last_path_full_overlay": "test_1_y",
             "oav_grid_snapshot_last_path_outer": "test_2_y",
             "oav_grid_snapshot_last_saved_path": "test_3_y",
-            "smargon_omega": 0,
+            "smargon-omega": 0,
         },
     }
     test_event_document_oav_snapshot_xz: Event = {
@@ -198,7 +199,7 @@ class TestData:
             "oav_grid_snapshot_last_saved_path": "test_3_z",
             "oav_grid_snapshot_microns_per_pixel_x": 1.25,
             "oav_grid_snapshot_microns_per_pixel_y": 1.5,
-            "smargon_omega": -90,
+            "smargon-omega": -90,
         },
     }
     test_event_document_pre_data_collection: Event = {
@@ -209,15 +210,9 @@ class TestData:
             "s4_slit_gaps_ygap": 0.2345,
             "synchrotron-synchrotron_mode": SynchrotronMode.USER,
             "undulator-current_gap": 1.234,
-            "aperture_scatterguard-selected_aperture": {
-                "name": "Medium",
-                "GDA_name": "MEDIUM",
-                "radius_microns": 50,
-                "location": (15, 16, 2, 18, 19),
-            },
-            "smargon_x": 10.0,
-            "smargon_y": 20.0,
-            "smargon_z": 30.0,
+            "smargon-x": 0.158435435,
+            "smargon-y": 0.023547354,
+            "smargon-z": 0.00345684712,
         },
         "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
         "seq_num": 1,
@@ -228,23 +223,25 @@ class TestData:
         "descriptor": "bd45c2e5-2b85-4280-95d7-a9a15800a78b",
         "time": 2666604299.928203,
         "data": {
+            "aperture_scatterguard-selected_aperture": {
+                "name": "Medium",
+                "GDA_name": "MEDIUM",
+                "radius_microns": 50,
+                "location": (15, 16, 2, 18, 19),
+            },
             "attenuator-actual_transmission": 1,
             "flux_flux_reading": 10,
             "dcm-energy_in_kev": 11.105,
+            "eiger_bit_depth": "16",
         },
-        "timestamps": {"det1": 1666604299.8220396, "det2": 1666604299.8235943},
+        "timestamps": {
+            "det1": 1666604299.8220396,
+            "det2": 1666604299.8235943,
+            "eiger_bit_depth": 1666604299.8220396,
+        },
         "seq_num": 1,
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8174",
         "filled": {},
-    }
-    test_event_document_nexus_read: Event = {
-        "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",
-        "time": 1709654583.9770422,
-        "data": {"eiger_bit_depth": "16"},
-        "timestamps": {"eiger_bit_depth": 1666604299.8220396},
-        "seq_num": 1,
-        "filled": {},
-        "descriptor": "aaaaaa",
     }
     test_event_document_zocalo_hardware: Event = {
         "uid": "29033ecf-e052-43dd-98af-c7cdd62e8175",

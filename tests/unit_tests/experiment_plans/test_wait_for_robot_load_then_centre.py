@@ -169,7 +169,7 @@ def run_simulating_smargon_wait(
     )
     sim_run_engine.add_handler(
         "read",
-        "smargon_disabled",
+        "smargon-disabled",
         return_not_disabled_after_reads,
     )
 
@@ -204,7 +204,7 @@ def test_given_smargon_disabled_when_plan_run_then_waits_on_smargon(
 
     sleep_messages = filter(lambda msg: msg.command == "sleep", messages)
     read_disabled_messages = filter(
-        lambda msg: msg.command == "read" and msg.obj.name == "smargon_disabled",
+        lambda msg: msg.command == "read" and msg.obj.name == "smargon-disabled",
         messages,
     )
 
@@ -259,7 +259,7 @@ def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
         messages,
     )
     read_disabled_messages = filter(
-        lambda msg: msg.command == "read" and msg.obj.name == "smargon_disabled",
+        lambda msg: msg.command == "read" and msg.obj.name == "smargon-disabled",
         messages,
     )
 
@@ -272,21 +272,21 @@ def test_when_plan_run_then_detector_arm_started_before_wait_on_robot_load(
     assert idx_of_arm_message < idx_of_first_read_disabled_message
 
 
-def test_when_prepare_for_robot_load_called_then_moves_as_expected(
+async def test_when_prepare_for_robot_load_called_then_moves_as_expected(
     robot_load_composite: RobotLoadThenCentreComposite,
 ):
     smargon = robot_load_composite.smargon
     aperture_scatterguard = robot_load_composite.aperture_scatterguard
-    smargon.x.user_readback.sim_put(10)  # type: ignore
-    smargon.z.user_readback.sim_put(5)  # type: ignore
-    smargon.omega.user_readback.sim_put(90)  # type: ignore
+    set_mock_value(smargon.x.user_readback, 10)
+    set_mock_value(smargon.z.user_readback, 5)
+    set_mock_value(smargon.omega.user_readback, 90)
 
     RE = RunEngine()
     RE(prepare_for_robot_load(robot_load_composite))
 
-    assert smargon.x.user_readback.get() == 0
-    assert smargon.z.user_readback.get() == 0
-    assert smargon.omega.user_readback.get() == 0
+    assert await smargon.x.user_readback.get_value() == 0
+    assert await smargon.z.user_readback.get_value() == 0
+    assert await smargon.omega.user_readback.get_value() == 0
 
     smargon.stub_offsets.set.assert_called_once_with(StubPosition.RESET_TO_ROBOT_LOAD)  # type: ignore
     aperture_scatterguard.set.assert_called_once_with(AperturePositions.ROBOT_LOAD)  # type: ignore

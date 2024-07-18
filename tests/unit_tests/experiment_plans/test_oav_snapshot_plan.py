@@ -1,12 +1,17 @@
+import dataclasses
 from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from dodal.devices.aperturescatterguard import ApertureScatterguard
+from dodal.devices.backlight import Backlight
+from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.oav.utils import ColorMode
+from dodal.devices.smargon import Smargon
 
 from hyperion.experiment_plans.oav_snapshot_plan import (
-    OAV_SNAPSHOT_GROUP,
+    OAV_SNAPSHOT_SETUP_SHOT,
     OavSnapshotComposite,
     oav_snapshot_plan,
 )
@@ -25,10 +30,23 @@ def oav_snapshot_params():
     )
 
 
+@dataclasses.dataclass
+class CompositeImpl(OavSnapshotComposite):
+    smargon: Smargon
+    oav: OAV
+    aperture_scatterguard: ApertureScatterguard
+    backlight: Backlight
+
+
 @pytest.fixture
-def oav_snapshot_composite(smargon, oav):
+def oav_snapshot_composite(smargon, oav, aperture_scatterguard, backlight):
     oav.zoom_controller.fvst.sim_put("5.0x")
-    return OavSnapshotComposite(smargon=smargon, oav=oav)
+    return CompositeImpl(
+        smargon=smargon,
+        oav=oav,
+        aperture_scatterguard=aperture_scatterguard,
+        backlight=backlight,
+    )
 
 
 @patch("hyperion.experiment_plans.oav_snapshot_plan.datetime", spec=datetime)
@@ -89,26 +107,29 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
-            and msg.obj.name == "smargon_omega"
+            and msg.obj.name == "smargon-omega"
             and msg.args[0] == expected["omega"]
-            and msg.kwargs["group"] == OAV_SNAPSHOT_GROUP,
+            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
             and msg.obj.name == "oav_snapshot_filename"
-            and msg.args[0] == expected["filename"],
-        )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "trigger"
-            and msg.obj.name == "oav_snapshot"
-            and msg.kwargs["group"] == OAV_SNAPSHOT_GROUP,
+            and msg.args[0] == expected["filename"]
+            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == OAV_SNAPSHOT_GROUP,
+            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "trigger" and msg.obj.name == "oav_snapshot",
+        )
+        msgs = sim_run_engine.assert_message_and_return_remaining(
+            msgs,
+            lambda msg: msg.command == "wait" and msg.kwargs["group"] is None,
         )
         msgs = sim_run_engine.assert_message_and_return_remaining(
             msgs,

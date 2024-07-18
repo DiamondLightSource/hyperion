@@ -28,7 +28,7 @@ def test_writers_not_sDTypeLikeetup_on_plan_start_doc(
 
 
 @patch("hyperion.external_interaction.callbacks.xray_centre.nexus_callback.NexusWriter")
-def test_writers_dont_create_on_init_but_do_on_nexus_read_event(
+def test_writers_dont_create_on_init_but_do_on_during_collection_read_event(
     mock_nexus_writer: MagicMock,
 ):
     mock_nexus_writer.side_effect = [MagicMock(), MagicMock()]
@@ -39,10 +39,12 @@ def test_writers_dont_create_on_init_but_do_on_nexus_read_event(
 
     nexus_handler.activity_gated_start(TestData.test_gridscan_outer_start_document)
     nexus_handler.activity_gated_descriptor(
-        TestData.test_descriptor_document_nexus_read
+        TestData.test_descriptor_document_during_data_collection
     )
 
-    nexus_handler.activity_gated_event(TestData.test_event_document_nexus_read)
+    nexus_handler.activity_gated_event(
+        TestData.test_event_document_during_data_collection
+    )
 
     assert nexus_handler.nexus_writer_1 is not None
     assert nexus_handler.nexus_writer_2 is not None
@@ -69,9 +71,9 @@ def test_given_different_bit_depths_then_writers_created_wth_correct_VDS_size(
 
     nexus_handler.activity_gated_start(TestData.test_start_document)
     nexus_handler.activity_gated_descriptor(
-        TestData.test_descriptor_document_nexus_read
+        TestData.test_descriptor_document_during_data_collection
     )
-    event_doc = deepcopy(TestData.test_event_document_nexus_read)
+    event_doc = deepcopy(TestData.test_event_document_during_data_collection)
     event_doc["data"]["eiger_bit_depth"] = bit_depth
 
     nexus_handler.activity_gated_event(event_doc)
