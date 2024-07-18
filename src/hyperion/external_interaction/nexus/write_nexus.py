@@ -52,19 +52,18 @@ class NexusWriter:
         self.detector: Detector = create_detector_parameters(parameters.detector_params)
         self.source: Source = Source(get_beamline_name("S03"))
         self.directory: Path = Path(parameters.storage_directory)
-        self.filename: str = parameters.file_name
         self.start_index: int = vds_start_index
         self.full_num_of_images: int = full_num_of_images or parameters.num_images
         self.data_filename: str = (
-            f"{self.filename}_{meta_data_run_number}"
+            f"{parameters.file_name}_{meta_data_run_number}"
             if meta_data_run_number
             else parameters.detector_params.full_filename
         )
         self.nexus_file: Path = (
-            self.directory / f"{self.filename}_{self.run_number}.nxs"
+            self.directory / f"{parameters.file_name}_{self.run_number}.nxs"
         )
         self.master_file: Path = (
-            self.directory / f"{self.filename}_{self.run_number}_master.h5"
+            self.directory / f"{parameters.file_name}_{self.run_number}_master.h5"
         )
         self.goniometer: Goniometer = create_goniometer_axes(
             omega_start_deg,
