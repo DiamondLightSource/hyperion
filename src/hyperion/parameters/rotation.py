@@ -5,7 +5,6 @@ from collections.abc import Iterator
 from itertools import accumulate
 from typing import Annotated
 
-import numpy as np
 from annotated_types import Len
 from dodal.devices.detector import DetectorParams
 from dodal.devices.detector.det_dist_to_beam_converter import (
@@ -82,7 +81,6 @@ class RotationExperiment(DiffractionExperimentWithSample):
 class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
     @property
     def ispyb_params(self):  # pyright: ignore
-        pos = np.array([self.x_start_um, self.y_start_um, self.z_start_um])
         return RotationIspybParams(
             visit_path=str(self.visit_directory),
             comment=self.comment,
@@ -92,7 +90,7 @@ class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
                 else []
             ),
             ispyb_experiment_type=self.ispyb_experiment_type,
-            position=pos if np.any(pos) else None,
+            position=None,
         )
 
     @property
