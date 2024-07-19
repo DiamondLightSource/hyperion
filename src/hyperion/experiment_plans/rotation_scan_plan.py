@@ -135,20 +135,55 @@ def calculate_motion_profile(
     LOGGER.info(
         f"{num_images=}, {shutter_time_s=}, {image_width_deg=}, {exposure_time_s=}, {direction=}"
     )
-    LOGGER.info(f"{(scan_width_deg := num_images * params.rotation_increment_deg)=}")
-    LOGGER.info(f"{(speed_for_rotation_deg_s := image_width_deg / exposure_time_s)=}")
+
+    scan_width_deg = num_images * params.rotation_increment_deg
+    LOGGER.info("scan_width_deg = num_images * params.rotation_increment_deg")
+    LOGGER.info(f"{scan_width_deg} = {num_images} * {params.rotation_increment_deg}")
+
+    speed_for_rotation_deg_s = image_width_deg / exposure_time_s
+    LOGGER.info("speed_for_rotation_deg_s = image_width_deg / exposure_time_s")
+    LOGGER.info(f"{speed_for_rotation_deg_s} = {image_width_deg} / {exposure_time_s}")
+
+    acceleration_offset_deg = motor_time_to_speed_s * speed_for_rotation_deg_s
     LOGGER.info(
-        f"{(acceleration_offset_deg := motor_time_to_speed_s * speed_for_rotation_deg_s)=}"
+        "acceleration_offset_deg = motor_time_to_speed_s * speed_for_rotation_deg_s"
     )
     LOGGER.info(
-        f"{(start_motion_deg := start_scan_deg - (acceleration_offset_deg * direction))=}"
+        f"{acceleration_offset_deg} = {motor_time_to_speed_s} * {speed_for_rotation_deg_s}"
+    )
+
+    start_motion_deg = start_scan_deg - (acceleration_offset_deg * direction)
+    LOGGER.info(
+        "start_motion_deg = start_scan_deg - (acceleration_offset_deg * direction)"
     )
     LOGGER.info(
-        f"{(shutter_opening_deg := speed_for_rotation_deg_s * shutter_time_s)=}"
+        f"{start_motion_deg} = {start_scan_deg} - ({acceleration_offset_deg} * {direction})"
     )
-    LOGGER.info(f"{(total_exposure_s := num_images * exposure_time_s)=}")
+
+    shutter_opening_deg = speed_for_rotation_deg_s * shutter_time_s
+    LOGGER.info("shutter_opening_deg = speed_for_rotation_deg_s * shutter_time_s")
     LOGGER.info(
-        f"{(distance_to_move_deg := (scan_width_deg + shutter_opening_deg + acceleration_offset_deg * 2) * direction)=}"
+        f"{shutter_opening_deg} = {speed_for_rotation_deg_s} * {shutter_time_s}"
+    )
+
+    shutter_opening_deg = speed_for_rotation_deg_s * shutter_time_s
+    LOGGER.info("shutter_opening_deg = speed_for_rotation_deg_s * shutter_time_s")
+    LOGGER.info(
+        f"{shutter_opening_deg} = {speed_for_rotation_deg_s} * {shutter_time_s}"
+    )
+
+    total_exposure_s = num_images * exposure_time_s
+    LOGGER.info("total_exposure_s = num_images * exposure_time_s")
+    LOGGER.info(f"{total_exposure_s} = {num_images} * {exposure_time_s}")
+
+    distance_to_move_deg = (
+        scan_width_deg + shutter_opening_deg + acceleration_offset_deg * 2
+    ) * direction
+    LOGGER.info(
+        "distance_to_move_deg = (scan_width_deg + shutter_opening_deg + acceleration_offset_deg * 2) * direction)"
+    )
+    LOGGER.info(
+        f"{distance_to_move_deg} = ({scan_width_deg} + {shutter_opening_deg} + {acceleration_offset_deg} * 2) * {direction})"
     )
 
     return RotationMotionProfile(
