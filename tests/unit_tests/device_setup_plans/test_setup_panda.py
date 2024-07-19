@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import NamedTuple
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -12,7 +13,6 @@ from ophyd_async.panda import SeqTrigger
 from hyperion.device_setup_plans.setup_panda import (
     MM_TO_ENCODER_COUNTS,
     disarm_panda_for_gridscan,
-    get_seq_table,
     set_and_create_panda_directory,
     setup_panda_for_flyscan,
 )
@@ -48,8 +48,8 @@ def run_simulating_setup_panda_functions(
                 "path",
                 PandAGridScanParams(transmission_fraction=0.01),
                 1,
-                1,
-                1,
+                0.1,
+                100.1,
                 smargon_speed,
             )
         )
@@ -65,16 +65,27 @@ def test_setup_panda_performs_correct_plans(mock_load_device, sim_run_engine):
         "setup", sim_run_engine, mock_load_device
     )
     mock_load_device.assert_called_once()
-    assert num_of_sets == 9
+    assert num_of_sets == 8
     assert num_of_waits == 3
+
+
+class SeqRow(NamedTuple):
+    repeats: int
+    trigger: SeqTrigger
+    position: int
+    time1: int
+    outa1: int
+    time2: int
+    outa2: int
 
 
 @pytest.mark.parametrize(
     "x_steps, x_step_size, x_start, run_up_distance_mm, time_between_x_steps_ms, exposure_time_s",
     [
-        (10, 0.5, -1, 0.05, 10, 0.02),
-        (0, 5, 0, 1, 1, 0.02),
-        (1, 2, 1.2, 1, 10, 0.1),
+        (10, 0.2, 0, 0.5, 10.001, 0.01),
+        (10, 0.5, -1, 0.05, 10.001, 0.01),
+        (1, 2, 1.2, 1, 100.001, 0.1),
+        (10, 2, -0.5, 3, 101, 0.1),
     ],
 )
 def test_setup_panda_correctly_configures_table(
@@ -84,14 +95,16 @@ def test_setup_panda_correctly_configures_table(
     run_up_distance_mm: float,
     time_between_x_steps_ms: float,
     exposure_time_s: float,
+    sim_run_engine: RunEngineSimulator,
+    panda,
 ):
     """The table should satisfy the following requirements:
     -All the numpy arrays within the Seqtable should have a length of 6
 
     -The position array should correspond to the following logic:
         1.Wait for physical trigger
-        2.Wait for POSA > x_start
-        3.Wait for end of row
+        2.Wait for POSA > x_start, send 1 trigger
+        3.Send the remaining n-1 triggers
         4.Wait for physical trigger (end of direction)
         5.Wait for POSA to go below the end of the row
         6.Wait for POSA to go below X_start
@@ -112,52 +125,98 @@ def test_setup_panda_correctly_configures_table(
         transmission_fraction=0.01,
     )
 
-    exposure_distance_mm = int(sample_velocity_mm_per_s * exposure_time_s)
+    exposure_distance_mm = sample_velocity_mm_per_s * exposure_time_s
 
-    table = get_seq_table(params, exposure_distance_mm)
+    msgs = sim_run_engine.simulate_plan(
+        setup_panda_for_flyscan(
+            panda,
+            "tests/test_data/panda_count_based_gridscan_seq.yaml",
+            params,
+            0,
+            exposure_time_s,
+            time_between_x_steps_ms,
+            sample_velocity_mm_per_s,
+        )
+    )
 
-    np.testing.assert_array_equal(table["time2"], np.ones(6))
+    # ignore all loading operations related to loading saved panda state from yaml
+    msgs = [
+        msg for msg in msgs if not msg.kwargs.get("group", "").startswith("load-phase")
+    ]
 
-    safe_distance = int((params.x_step_size * MM_TO_ENCODER_COUNTS) / 2)
+    table_msg = [
+        msg
+        for msg in msgs
+        if msg.command == "set" and msg.obj.name == "panda-seq-1-table"
+    ][0]
+
+    table = table_msg.args[0]
+
+    PULSE_WIDTH_US = 1
+    SPACE_WIDTH_US = time_between_x_steps_ms * 1000 - PULSE_WIDTH_US
+    expected_seq_rows: list[SeqRow] = [
+        SeqRow(1, SeqTrigger.BITA_1, 0, 0, 0, 1, 0),
+        SeqRow(
+            1,
+            SeqTrigger.POSA_GT,
+            int(params.x_start * MM_TO_ENCODER_COUNTS),
+            PULSE_WIDTH_US,
+            1,
+            SPACE_WIDTH_US,
+            0,
+        ),
+    ]
+    if x_steps > 1:
+        expected_seq_rows.append(
+            SeqRow(
+                x_steps - 1,
+                SeqTrigger.IMMEDIATE,
+                0,
+                PULSE_WIDTH_US,
+                1,
+                SPACE_WIDTH_US,
+                0,
+            )
+        )
 
     exposure_distance_counts = exposure_distance_mm * MM_TO_ENCODER_COUNTS
-
-    np.testing.assert_array_equal(
-        table["position"],
-        np.array(
-            [
-                0,
-                params.x_start * MM_TO_ENCODER_COUNTS,
-                (params.x_start + (params.x_steps - 1) * params.x_step_size)
-                * MM_TO_ENCODER_COUNTS
-                + safe_distance,
-                0,
-                (params.x_start + (params.x_steps - 1) * params.x_step_size)
-                * MM_TO_ENCODER_COUNTS
-                + exposure_distance_counts,
-                params.x_start * MM_TO_ENCODER_COUNTS
-                - safe_distance
-                + exposure_distance_counts,
-            ],
-            dtype=np.int32,
-        ),
-    )
-
-    np.testing.assert_array_equal(
-        table["trigger"],
-        np.array(
-            [
-                SeqTrigger.BITA_1,
-                SeqTrigger.POSA_GT,
-                SeqTrigger.POSA_GT,
-                SeqTrigger.BITA_1,
+    expected_seq_rows.extend(
+        [
+            SeqRow(1, SeqTrigger.BITA_1, 0, 0, 0, 1, 0),
+            SeqRow(
+                1,
                 SeqTrigger.POSA_LT,
-                SeqTrigger.POSA_LT,
-            ]
-        ),
+                int(
+                    (params.x_start + (params.x_steps - 1) * params.x_step_size)
+                    * MM_TO_ENCODER_COUNTS
+                    + exposure_distance_counts
+                ),
+                PULSE_WIDTH_US,
+                1,
+                SPACE_WIDTH_US,
+                0,
+            ),
+        ]
     )
+    if x_steps > 1:
+        expected_seq_rows.append(
+            SeqRow(
+                x_steps - 1,
+                SeqTrigger.IMMEDIATE,
+                0,
+                PULSE_WIDTH_US,
+                1,
+                SPACE_WIDTH_US,
+                0,
+            )
+        )
 
-    np.testing.assert_array_equal(table["outa2"], np.array([0, 1, 0, 0, 1, 0]))
+    for key in SeqRow._fields:
+        np.testing.assert_array_equal(
+            table.get(key),
+            [getattr(row, key) for row in expected_seq_rows],
+            f"Sequence table for field {key} does not match",
+        )
 
 
 def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
@@ -189,8 +248,8 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
                 "path",
                 PandAGridScanParams(transmission_fraction=0.01),
                 1,
-                1,
-                1,
+                0.1,
+                101.1,
                 get_smargon_speed(0.1, 1),
             )
         )
@@ -202,7 +261,7 @@ def test_disarm_panda_disables_correct_blocks(sim_run_engine):
     num_of_sets, num_of_waits = run_simulating_setup_panda_functions(
         "disarm", sim_run_engine
     )
-    assert num_of_sets == 6
+    assert num_of_sets == 5
     assert num_of_waits == 1
 
 

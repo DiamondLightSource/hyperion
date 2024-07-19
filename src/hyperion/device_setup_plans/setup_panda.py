@@ -1,17 +1,24 @@
 import os
+import sys
+from argparse import ArgumentParser
 from enum import Enum
 from pathlib import Path
+from typing import cast
 
 import bluesky.plan_stubs as bps
 from blueapi.core import MsgGenerator
+from bluesky import RunEngine
+from dodal.beamlines import module_name_for_beamline
 from dodal.common.beamlines.beamline_utils import get_directory_provider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
-from ophyd_async.core import load_device
+from dodal.utils import make_all_devices
+from ophyd_async.core import load_device, save_device
 from ophyd_async.panda import (
     HDFPanda,
     SeqTable,
     SeqTableRow,
     SeqTrigger,
+    phase_sorter,
     seq_table_from_rows,
 )
 
@@ -20,6 +27,7 @@ from hyperion.log import LOGGER
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
 DETECTOR_TRIGGER_WIDTH = 1e-4
+TICKS_PER_MS = 1000  # Panda sequencer prescaler will be set to us
 
 
 class Enabled(Enum):
@@ -33,8 +41,7 @@ class PcapArm(Enum):
 
 
 def get_seq_table(
-    parameters: PandAGridScanParams,
-    exposure_distance_mm,
+    parameters: PandAGridScanParams, exposure_distance_mm, time_between_steps_ms
 ) -> SeqTable:
     """
     -Exposure distance is the distance travelled by the sample each time the detector is exposed: exposure time * sample velocity
@@ -43,9 +50,10 @@ def get_seq_table(
     is captured
     SEQUENCER TABLE:
         1:Wait for physical trigger from motion script to mark start of scan / change of direction
-        2:Wait for POSA (X2) to be greater than X_START, then
-            send a signal out every (minimum eiger exposure time + eiger dead time)
-        3:Wait for POSA (X2) to be greater than X_START + X_STEP_SIZE + a safe distance for the final trigger, then cut out the signal
+
+        2:Wait for POSA (X2) to be greater than X_START
+        3:Send out x_steps triggers every box_width / x_speed time
+
         4:Wait for physical trigger from motion script to mark change of direction
         5:Wait for POSA (X2) to be less than X_START + X_STEP_SIZE + exposure distance, then
             send a signal out every (minimum eiger exposure time + eiger dead time)
@@ -53,9 +61,9 @@ def get_seq_table(
         7:Go back to step one.
 
         For a more detailed explanation and a diagram, see https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning
-    """
 
-    safe_distance_x_counts = int(MM_TO_ENCODER_COUNTS * parameters.x_step_size / 2)
+        For documentation on Panda itself, see https://pandablocks.github.io/PandABlocks-FPGA/master/index.html
+    """
 
     start_of_grid_x_counts = int(parameters.x_start * MM_TO_ENCODER_COUNTS)
 
@@ -67,44 +75,65 @@ def get_seq_table(
 
     exposure_distance_x_counts = int(exposure_distance_mm * MM_TO_ENCODER_COUNTS)
 
+    num_pulses = parameters.x_steps
+
+    delay_between_pulses = time_between_steps_ms * TICKS_PER_MS
+
+    PULSE_WIDTH_US = 1
+
+    assert delay_between_pulses > PULSE_WIDTH_US
+
+    # BITA_1 trigger wired from TTLIN1, this is the trigger input
+
+    # +ve direction scan
     rows = [SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1)]
+
     rows.append(
         SeqTableRow(
             trigger=SeqTrigger.POSA_GT,
             position=start_of_grid_x_counts,
-            time2=1,
+            time1=PULSE_WIDTH_US,
             outa1=True,
-            outa2=True,
-        )
-    )
-    rows.append(
-        SeqTableRow(
-            position=end_of_grid_x_counts + safe_distance_x_counts,
-            trigger=SeqTrigger.POSA_GT,
-            time2=1,
+            time2=delay_between_pulses - PULSE_WIDTH_US,
+            outa2=False,
         )
     )
 
+    if num_pulses > 1:
+        rows.append(
+            SeqTableRow(
+                repeats=num_pulses - 1,  # account for previous 1 pulse at start
+                time1=PULSE_WIDTH_US,
+                outa1=True,
+                time2=delay_between_pulses - PULSE_WIDTH_US,
+                outa2=False,
+            )
+        )
+
+    # -ve direction scan
     rows.append(SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1))
+
     rows.append(
         SeqTableRow(
             trigger=SeqTrigger.POSA_LT,
             position=end_of_grid_x_counts + exposure_distance_x_counts,
-            time2=1,
+            time1=PULSE_WIDTH_US,
             outa1=True,
-            outa2=True,
+            time2=delay_between_pulses - PULSE_WIDTH_US,
+            outa2=False,
         )
     )
 
-    rows.append(
-        SeqTableRow(
-            trigger=SeqTrigger.POSA_LT,
-            position=start_of_grid_x_counts
-            - safe_distance_x_counts
-            + exposure_distance_x_counts,
-            time2=1,
+    if num_pulses > 1:
+        rows.append(
+            SeqTableRow(
+                repeats=num_pulses - 1,  # account for previous 1 pulse at start
+                time1=PULSE_WIDTH_US,
+                outa1=True,
+                time2=delay_between_pulses - PULSE_WIDTH_US,
+                outa2=False,
+            )
         )
-    )
 
     table = seq_table_from_rows(*rows)
 
@@ -139,6 +168,10 @@ def setup_panda_for_flyscan(
     Yields:
         Iterator[MsgGenerator]
     """
+    assert parameters.x_steps > 0
+    assert time_between_x_steps_ms * 1000 >= exposure_time_s
+    assert sample_velocity_mm_per_s * exposure_time_s < parameters.x_step_size
+
     yield from load_device(panda, config_yaml_path)
 
     # Home the PandA X encoder using current motor position
@@ -148,21 +181,13 @@ def setup_panda_for_flyscan(
         wait=True,
     )
 
-    LOGGER.info(f"Setting PandA clock to period {time_between_x_steps_ms}")
-
-    yield from bps.abs_set(
-        panda.clock[1].period,  # type: ignore
-        time_between_x_steps_ms,
-        group="panda-config",
-    )
-
     yield from bps.abs_set(
         panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
     )
 
     exposure_distance_mm = sample_velocity_mm_per_s * exposure_time_s
 
-    table = get_seq_table(parameters, exposure_distance_mm)
+    table = get_seq_table(parameters, exposure_distance_mm, time_between_x_steps_ms)
 
     yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
@@ -195,10 +220,6 @@ def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenera
     yield from bps.abs_set(panda.pcap.arm, PcapArm.DISARMED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.counter[1].enable, Enabled.DISABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.seq[1].enable, Enabled.DISABLED.value, group=group)
-    yield from bps.abs_set(
-        panda.clock[1].enable, Enabled.DISABLED.value, group=group
-    )  # While disarming the clock shouldn't be necessery,
-    # it will stop the eiger continuing to trigger if something in the sequencer table goes wrong
     yield from bps.abs_set(panda.pulse[1].enable, Enabled.DISABLED.value, group=group)
     yield from bps.abs_set(panda.pcap.enable, Enabled.DISABLED.value, group=group)  # type: ignore
     yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
@@ -219,3 +240,41 @@ def set_and_create_panda_directory(panda_directory: Path) -> MsgGenerator:
         await get_directory_provider().update(directory=panda_directory)
 
     yield from bps.wait_for([set_panda_dir])
+
+
+def _save_panda_to_file(RE: RunEngine, panda: HDFPanda, path: str):
+    def save_to_file():
+        yield from save_device(panda, path, sorter=phase_sorter)
+
+    RE(save_to_file())
+
+
+def _main():
+    parser = ArgumentParser(description="Save a device to yaml")
+    parser.add_argument("beamline", help="beamline to save from e.g. i03")
+    parser.add_argument("device_name", help="name of the device e.g. panda")
+    parser.add_argument("output_file", help="output filename")
+    args = parser.parse_args()
+    beamline = args.beamline
+    device_name = args.device_name
+    output_file = args.output_file
+
+    print(f"Saving to {output_file} from {device_name} on {beamline}")
+    os.environ["BEAMLINE"] = beamline
+    RE = RunEngine()
+
+    print("Creating devices...")
+    module_name = module_name_for_beamline(beamline)
+    devices, exceptions = make_all_devices(
+        f"dodal.beamlines.{module_name}", include_skipped=False
+    )
+    panda = devices[device_name]
+
+    print("Saving to file...")
+    _save_panda_to_file(RE, cast(HDFPanda, panda), output_file)
+    print("Done.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(_main())

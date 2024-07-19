@@ -1,0 +1,971 @@
+- calc.1.out_units: ''
+  calc.2.out_units: ''
+  clock.1.period_units: ms
+  clock.2.period_units: s
+  counter.1.out_units: ''
+  counter.2.out_units: ''
+  counter.3.out_units: ''
+  counter.4.out_units: ''
+  counter.5.out_units: ''
+  counter.6.out_units: ''
+  counter.7.out_units: ''
+  counter.8.out_units: ''
+  filter.1.out_units: ''
+  filter.2.out_units: ''
+  inenc.1.clk_period_units: s
+  inenc.1.frame_period_units: s
+  inenc.1.val_units: mm
+  inenc.2.clk_period_units: s
+  inenc.2.frame_period_units: s
+  inenc.2.val_units: mm
+  inenc.3.clk_period_units: s
+  inenc.3.frame_period_units: s
+  inenc.3.val_units: mm
+  inenc.4.clk_period_units: s
+  inenc.4.frame_period_units: s
+  inenc.4.val_units: ''
+  outenc.1.qperiod_units: s
+  outenc.2.qperiod_units: s
+  outenc.3.qperiod_units: s
+  outenc.4.qperiod_units: s
+  pgen.1.out_units: ''
+  pgen.2.out_units: ''
+  pulse.1.delay_units: s
+  pulse.1.step_units: s
+  pulse.1.width_units: s
+  pulse.2.delay_units: s
+  pulse.2.step_units: s
+  pulse.2.width_units: s
+  pulse.3.delay_units: s
+  pulse.3.step_units: s
+  pulse.3.width_units: s
+  pulse.4.delay_units: s
+  pulse.4.step_units: s
+  pulse.4.width_units: s
+  seq.1.prescale_units: s
+  seq.2.prescale_units: s
+  sfp3_sync_in.pos1_units: ''
+  sfp3_sync_in.pos2_units: ''
+  sfp3_sync_in.pos3_units: ''
+  sfp3_sync_in.pos4_units: ''
+- bits.a: '0'
+  bits.b: '0'
+  bits.c: '0'
+  bits.d: '0'
+  bits.label: Soft inputs and constant bits
+  calc.1.func: A+B+C+D
+  calc.1.inpa: ZERO
+  calc.1.inpb: ZERO
+  calc.1.inpc: ZERO
+  calc.1.inpd: ZERO
+  calc.1.label: Position calc
+  calc.1.out_capture: 'No'
+  calc.1.out_dataset: ''
+  calc.1.out_offset: 0.0
+  calc.1.out_scale: 1.0
+  calc.1.shift: 0.0
+  calc.1.typea: Value
+  calc.1.typeb: Value
+  calc.1.typec: Value
+  calc.1.typed: Value
+  calc.2.func: A+B+C+D
+  calc.2.inpa: ZERO
+  calc.2.inpb: ZERO
+  calc.2.inpc: ZERO
+  calc.2.inpd: ZERO
+  calc.2.label: Position calc
+  calc.2.out_capture: 'No'
+  calc.2.out_dataset: ''
+  calc.2.out_offset: 0.0
+  calc.2.out_scale: 1.0
+  calc.2.shift: 0.0
+  calc.2.typea: Value
+  calc.2.typeb: Value
+  calc.2.typec: Value
+  calc.2.typed: Value
+  clock.1.enable: ZERO
+  clock.1.enable_delay: 0
+  clock.1.label: Configurable clocks
+  clock.1.period: 2.001
+  clock.2.enable: ZERO
+  clock.2.enable_delay: 0
+  clock.2.label: Configurable clocks
+  clock.2.period: 0.0
+  counter.1.dir: ZERO
+  counter.1.dir_delay: 0
+  counter.1.enable: ZERO
+  counter.1.enable_delay: 0
+  counter.1.label: Up/Down pulse counter
+  counter.1.max: 0
+  counter.1.min: 0
+  counter.1.out_capture: 'No'
+  counter.1.out_dataset: ''
+  counter.1.out_offset: 0.0
+  counter.1.out_scale: 1.0
+  counter.1.start: 0
+  counter.1.step: 0.0
+  counter.1.trig: PULSE1.OUT
+  counter.1.trig_delay: 0
+  counter.2.dir: ZERO
+  counter.2.dir_delay: 0
+  counter.2.enable: ZERO
+  counter.2.enable_delay: 0
+  counter.2.label: Up/Down pulse counter
+  counter.2.max: 0
+  counter.2.min: 0
+  counter.2.out_capture: 'No'
+  counter.2.out_dataset: ''
+  counter.2.out_offset: 0.0
+  counter.2.out_scale: 1.0
+  counter.2.start: 0
+  counter.2.step: 0.0
+  counter.2.trig: ZERO
+  counter.2.trig_delay: 0
+  counter.3.dir: ZERO
+  counter.3.dir_delay: 0
+  counter.3.enable: ZERO
+  counter.3.enable_delay: 0
+  counter.3.label: Up/Down pulse counter
+  counter.3.max: 0
+  counter.3.min: 0
+  counter.3.out_capture: 'No'
+  counter.3.out_dataset: ''
+  counter.3.out_offset: 0.0
+  counter.3.out_scale: 1.0
+  counter.3.start: 0
+  counter.3.step: 0.0
+  counter.3.trig: ZERO
+  counter.3.trig_delay: 0
+  counter.4.dir: ZERO
+  counter.4.dir_delay: 0
+  counter.4.enable: ZERO
+  counter.4.enable_delay: 0
+  counter.4.label: Up/Down pulse counter
+  counter.4.max: 0
+  counter.4.min: 0
+  counter.4.out_capture: 'No'
+  counter.4.out_dataset: ''
+  counter.4.out_offset: 0.0
+  counter.4.out_scale: 1.0
+  counter.4.start: 0
+  counter.4.step: 0.0
+  counter.4.trig: ZERO
+  counter.4.trig_delay: 0
+  counter.5.dir: ZERO
+  counter.5.dir_delay: 0
+  counter.5.enable: ZERO
+  counter.5.enable_delay: 0
+  counter.5.label: Up/Down pulse counter
+  counter.5.max: 0
+  counter.5.min: 0
+  counter.5.out_capture: 'No'
+  counter.5.out_dataset: ''
+  counter.5.out_offset: 0.0
+  counter.5.out_scale: 1.0
+  counter.5.start: 0
+  counter.5.step: 0.0
+  counter.5.trig: ZERO
+  counter.5.trig_delay: 0
+  counter.6.dir: ZERO
+  counter.6.dir_delay: 0
+  counter.6.enable: ZERO
+  counter.6.enable_delay: 0
+  counter.6.label: Up/Down pulse counter
+  counter.6.max: 0
+  counter.6.min: 0
+  counter.6.out_capture: 'No'
+  counter.6.out_dataset: ''
+  counter.6.out_offset: 0.0
+  counter.6.out_scale: 1.0
+  counter.6.start: 0
+  counter.6.step: 0.0
+  counter.6.trig: ZERO
+  counter.6.trig_delay: 0
+  counter.7.dir: ZERO
+  counter.7.dir_delay: 0
+  counter.7.enable: ZERO
+  counter.7.enable_delay: 0
+  counter.7.label: Up/Down pulse counter
+  counter.7.max: 0
+  counter.7.min: 0
+  counter.7.out_capture: 'No'
+  counter.7.out_dataset: ''
+  counter.7.out_offset: 0.0
+  counter.7.out_scale: 1.0
+  counter.7.start: 0
+  counter.7.step: 0.0
+  counter.7.trig: ZERO
+  counter.7.trig_delay: 0
+  counter.8.dir: ZERO
+  counter.8.dir_delay: 0
+  counter.8.enable: ZERO
+  counter.8.enable_delay: 0
+  counter.8.label: Up/Down pulse counter
+  counter.8.max: 0
+  counter.8.min: 0
+  counter.8.out_capture: 'No'
+  counter.8.out_dataset: ''
+  counter.8.out_offset: 0.0
+  counter.8.out_scale: 1.0
+  counter.8.start: 0
+  counter.8.step: 0.0
+  counter.8.trig: ZERO
+  counter.8.trig_delay: 0
+  data.capture: false
+  data.capture_mode: FIRST_N
+  data.createdirectory: 0
+  data.flush_period: 1.0
+  data.hdf_directory: ''
+  data.hdf_file_name: ''
+  data.num_capture: 0
+  div.1.divisor: 0.0
+  div.1.enable: ZERO
+  div.1.enable_delay: 0
+  div.1.first_pulse: OutN
+  div.1.inp: ZERO
+  div.1.inp_delay: 0
+  div.1.label: Pulse divider
+  div.2.divisor: 0.0
+  div.2.enable: ZERO
+  div.2.enable_delay: 0
+  div.2.first_pulse: OutN
+  div.2.inp: ZERO
+  div.2.inp_delay: 0
+  div.2.label: Pulse divider
+  filter.1.enable: ZERO
+  filter.1.enable_delay: 0
+  filter.1.inp: ZERO
+  filter.1.label: Filter block modes are Difference and Divider
+  filter.1.mode: difference
+  filter.1.out_capture: 'No'
+  filter.1.out_dataset: ''
+  filter.1.out_offset: 0.0
+  filter.1.out_scale: 1.0
+  filter.1.trig: ZERO
+  filter.1.trig_delay: 0
+  filter.2.enable: ZERO
+  filter.2.enable_delay: 0
+  filter.2.inp: ZERO
+  filter.2.label: Filter block modes are Difference and Divider
+  filter.2.mode: difference
+  filter.2.out_capture: 'No'
+  filter.2.out_dataset: ''
+  filter.2.out_offset: 0.0
+  filter.2.out_scale: 1.0
+  filter.2.trig: ZERO
+  filter.2.trig_delay: 0
+  fmc_24v_in.db: None
+  fmc_24v_in.label: FMC 24V IO Module Input
+  fmc_24v_in.vtsel: 5V
+  fmc_24v_out.config: 0.0
+  fmc_24v_out.en: Disable
+  fmc_24v_out.fltr: 'Off'
+  fmc_24v_out.label: FMC 24V IO Module Input
+  fmc_24v_out.pushpl: High-side
+  fmc_24v_out.pwr_on: 'Off'
+  fmc_24v_out.srial: Parallel
+  fmc_24v_out.val1: ZERO
+  fmc_24v_out.val1_delay: 0
+  fmc_24v_out.val2: ZERO
+  fmc_24v_out.val2_delay: 0
+  fmc_24v_out.val3: ZERO
+  fmc_24v_out.val3_delay: 0
+  fmc_24v_out.val4: ZERO
+  fmc_24v_out.val4_delay: 0
+  fmc_24v_out.val5: ZERO
+  fmc_24v_out.val5_delay: 0
+  fmc_24v_out.val6: ZERO
+  fmc_24v_out.val6_delay: 0
+  fmc_24v_out.val7: ZERO
+  fmc_24v_out.val7_delay: 0
+  fmc_24v_out.val8: ZERO
+  fmc_24v_out.val8_delay: 0
+  inenc.1.bits: 0.0
+  inenc.1.clk: ZERO
+  inenc.1.clk_delay: 0
+  inenc.1.clk_period: 0.0
+  inenc.1.clk_src: Internally Generated
+  inenc.1.frame_period: 0.0
+  inenc.1.label: Y
+  inenc.1.lsb_discard: 0.0
+  inenc.1.msb_discard: 0.0
+  inenc.1.protocol: Quadrature
+  inenc.1.rst_on_z: '0'
+  inenc.1.setp: 0
+  inenc.1.val_capture: Min Max Mean
+  inenc.1.val_dataset: ''
+  inenc.1.val_offset: 0.0
+  inenc.1.val_scale: 5.0e-06
+  inenc.2.bits: 0.0
+  inenc.2.clk: ZERO
+  inenc.2.clk_delay: 0
+  inenc.2.clk_period: 0.0
+  inenc.2.clk_src: Internally Generated
+  inenc.2.frame_period: 0.0
+  inenc.2.label: Z
+  inenc.2.lsb_discard: 0.0
+  inenc.2.msb_discard: 0.0
+  inenc.2.protocol: Quadrature
+  inenc.2.rst_on_z: '0'
+  inenc.2.setp: 0
+  inenc.2.val_capture: 'No'
+  inenc.2.val_dataset: ''
+  inenc.2.val_offset: 0.0
+  inenc.2.val_scale: 5.0e-06
+  inenc.3.bits: 0.0
+  inenc.3.clk: ZERO
+  inenc.3.clk_delay: 0
+  inenc.3.clk_period: 0.0
+  inenc.3.clk_src: Internally Generated
+  inenc.3.frame_period: 0.0
+  inenc.3.label: Input encoder
+  inenc.3.lsb_discard: 0.0
+  inenc.3.msb_discard: 0.0
+  inenc.3.protocol: Quadrature
+  inenc.3.rst_on_z: '0'
+  inenc.3.setp: 0
+  inenc.3.val_capture: 'No'
+  inenc.3.val_dataset: ''
+  inenc.3.val_offset: 0.0
+  inenc.3.val_scale: 5.0e-06
+  inenc.4.bits: 0.0
+  inenc.4.clk: ZERO
+  inenc.4.clk_delay: 0
+  inenc.4.clk_period: 0.0
+  inenc.4.clk_src: Internally Generated
+  inenc.4.frame_period: 0.0
+  inenc.4.label: Input encoder
+  inenc.4.lsb_discard: 0.0
+  inenc.4.msb_discard: 0.0
+  inenc.4.protocol: Quadrature
+  inenc.4.rst_on_z: '0'
+  inenc.4.setp: 0
+  inenc.4.val_capture: 'No'
+  inenc.4.val_dataset: ''
+  inenc.4.val_offset: 0.0
+  inenc.4.val_scale: 1.0
+  lut.1.func: A|B
+  lut.1.inpa: ZERO
+  lut.1.inpa_delay: 0
+  lut.1.inpb: ZERO
+  lut.1.inpb_delay: 0
+  lut.1.inpc: ZERO
+  lut.1.inpc_delay: 0
+  lut.1.inpd: ZERO
+  lut.1.inpd_delay: 0
+  lut.1.inpe: ZERO
+  lut.1.inpe_delay: 0
+  lut.1.label: ensure pgen triggers at beginning and each iteration
+  lut.1.typea: Input-Level
+  lut.1.typeb: Input-Level
+  lut.1.typec: Input-Level
+  lut.1.typed: Input-Level
+  lut.1.typee: Input-Level
+  lut.2.func: A | B
+  lut.2.inpa: ZERO
+  lut.2.inpa_delay: 0
+  lut.2.inpb: ZERO
+  lut.2.inpb_delay: 0
+  lut.2.inpc: ZERO
+  lut.2.inpc_delay: 0
+  lut.2.inpd: ZERO
+  lut.2.inpd_delay: 0
+  lut.2.inpe: ZERO
+  lut.2.inpe_delay: 0
+  lut.2.label: OR 2
+  lut.2.typea: Input-Level
+  lut.2.typeb: Input-Level
+  lut.2.typec: Input-Level
+  lut.2.typed: Input-Level
+  lut.2.typee: Input-Level
+  lut.3.func: '0x00000000'
+  lut.3.inpa: ZERO
+  lut.3.inpa_delay: 0
+  lut.3.inpb: ZERO
+  lut.3.inpb_delay: 0
+  lut.3.inpc: ZERO
+  lut.3.inpc_delay: 0
+  lut.3.inpd: ZERO
+  lut.3.inpd_delay: 0
+  lut.3.inpe: ZERO
+  lut.3.inpe_delay: 0
+  lut.3.label: AND2
+  lut.3.typea: Input-Level
+  lut.3.typeb: Input-Level
+  lut.3.typec: Input-Level
+  lut.3.typed: Input-Level
+  lut.3.typee: Input-Level
+  lut.4.func: A | B | C
+  lut.4.inpa: ZERO
+  lut.4.inpa_delay: 0
+  lut.4.inpb: ZERO
+  lut.4.inpb_delay: 0
+  lut.4.inpc: ZERO
+  lut.4.inpc_delay: 0
+  lut.4.inpd: ZERO
+  lut.4.inpd_delay: 0
+  lut.4.inpe: ZERO
+  lut.4.inpe_delay: 0
+  lut.4.label: 'OR 1 '
+  lut.4.typea: Input-Level
+  lut.4.typeb: Input-Level
+  lut.4.typec: Input-Level
+  lut.4.typed: Input-Level
+  lut.4.typee: Input-Level
+  lut.5.func: '0x00000000'
+  lut.5.inpa: ZERO
+  lut.5.inpa_delay: 0
+  lut.5.inpb: ZERO
+  lut.5.inpb_delay: 0
+  lut.5.inpc: ZERO
+  lut.5.inpc_delay: 0
+  lut.5.inpd: ZERO
+  lut.5.inpd_delay: 0
+  lut.5.inpe: ZERO
+  lut.5.inpe_delay: 0
+  lut.5.label: Lookup table
+  lut.5.typea: Input-Level
+  lut.5.typeb: Input-Level
+  lut.5.typec: Input-Level
+  lut.5.typed: Input-Level
+  lut.5.typee: Input-Level
+  lut.6.func: '0x00000000'
+  lut.6.inpa: ZERO
+  lut.6.inpa_delay: 0
+  lut.6.inpb: ZERO
+  lut.6.inpb_delay: 0
+  lut.6.inpc: ZERO
+  lut.6.inpc_delay: 0
+  lut.6.inpd: ZERO
+  lut.6.inpd_delay: 0
+  lut.6.inpe: ZERO
+  lut.6.inpe_delay: 0
+  lut.6.label: Lookup table
+  lut.6.typea: Input-Level
+  lut.6.typeb: Input-Level
+  lut.6.typec: Input-Level
+  lut.6.typed: Input-Level
+  lut.6.typee: Input-Level
+  lut.7.func: '0x00000000'
+  lut.7.inpa: ZERO
+  lut.7.inpa_delay: 0
+  lut.7.inpb: ZERO
+  lut.7.inpb_delay: 0
+  lut.7.inpc: ZERO
+  lut.7.inpc_delay: 0
+  lut.7.inpd: ZERO
+  lut.7.inpd_delay: 0
+  lut.7.inpe: ZERO
+  lut.7.inpe_delay: 0
+  lut.7.label: Lookup table
+  lut.7.typea: Input-Level
+  lut.7.typeb: Input-Level
+  lut.7.typec: Input-Level
+  lut.7.typed: Input-Level
+  lut.7.typee: Input-Level
+  lut.8.func: '0x00000000'
+  lut.8.inpa: ZERO
+  lut.8.inpa_delay: 0
+  lut.8.inpb: ZERO
+  lut.8.inpb_delay: 0
+  lut.8.inpc: ZERO
+  lut.8.inpc_delay: 0
+  lut.8.inpd: ZERO
+  lut.8.inpd_delay: 0
+  lut.8.inpe: ZERO
+  lut.8.inpe_delay: 0
+  lut.8.label: Lookup table
+  lut.8.typea: Input-Level
+  lut.8.typeb: Input-Level
+  lut.8.typec: Input-Level
+  lut.8.typed: Input-Level
+  lut.8.typee: Input-Level
+  lvdsin.1.label: LVDS input
+  lvdsin.2.label: LVDS input
+  lvdsout.1.label: LVDS output
+  lvdsout.1.val: ZERO
+  lvdsout.1.val_delay: 0
+  lvdsout.2.label: LVDS output
+  lvdsout.2.val: ZERO
+  lvdsout.2.val_delay: 0
+  outenc.1.a: ZERO
+  outenc.1.a_delay: 0
+  outenc.1.b: ZERO
+  outenc.1.b_delay: 0
+  outenc.1.bits: 0.0
+  outenc.1.data: ZERO
+  outenc.1.data_delay: 0
+  outenc.1.enable: ZERO
+  outenc.1.enable_delay: 0
+  outenc.1.generator_error: 'No'
+  outenc.1.label: Output encoder
+  outenc.1.protocol: Quadrature
+  outenc.1.qperiod: 0.0
+  outenc.1.val: ZERO
+  outenc.1.z: ZERO
+  outenc.1.z_delay: 0
+  outenc.2.a: ZERO
+  outenc.2.a_delay: 0
+  outenc.2.b: ZERO
+  outenc.2.b_delay: 0
+  outenc.2.bits: 0.0
+  outenc.2.data: ZERO
+  outenc.2.data_delay: 0
+  outenc.2.enable: ZERO
+  outenc.2.enable_delay: 0
+  outenc.2.generator_error: 'No'
+  outenc.2.label: Output encoder
+  outenc.2.protocol: Quadrature
+  outenc.2.qperiod: 0.0
+  outenc.2.val: ZERO
+  outenc.2.z: ZERO
+  outenc.2.z_delay: 0
+  outenc.3.a: ZERO
+  outenc.3.a_delay: 0
+  outenc.3.b: ZERO
+  outenc.3.b_delay: 0
+  outenc.3.bits: 0.0
+  outenc.3.data: ZERO
+  outenc.3.data_delay: 0
+  outenc.3.enable: ZERO
+  outenc.3.enable_delay: 0
+  outenc.3.generator_error: 'No'
+  outenc.3.label: Output encoder
+  outenc.3.protocol: Quadrature
+  outenc.3.qperiod: 0.0
+  outenc.3.val: ZERO
+  outenc.3.z: ZERO
+  outenc.3.z_delay: 0
+  outenc.4.a: ZERO
+  outenc.4.a_delay: 0
+  outenc.4.b: ZERO
+  outenc.4.b_delay: 0
+  outenc.4.bits: 0.0
+  outenc.4.data: ZERO
+  outenc.4.data_delay: 0
+  outenc.4.enable: ZERO
+  outenc.4.enable_delay: 0
+  outenc.4.generator_error: 'No'
+  outenc.4.label: Output encoder
+  outenc.4.protocol: Quadrature
+  outenc.4.qperiod: 0.0
+  outenc.4.val: ZERO
+  outenc.4.z: ZERO
+  outenc.4.z_delay: 0
+  pcap.arm: false
+  pcap.bits0_capture: 'No'
+  pcap.bits0_dataset: ''
+  pcap.bits1_capture: 'No'
+  pcap.bits1_dataset: ''
+  pcap.bits2_capture: 'No'
+  pcap.bits2_dataset: ''
+  pcap.bits3_capture: 'No'
+  pcap.bits3_dataset: ''
+  pcap.enable: ZERO
+  pcap.enable_delay: 0
+  pcap.gate: PULSE1.OUT
+  pcap.gate_delay: 0
+  pcap.label: Position capture control
+  pcap.samples_capture: 'No'
+  pcap.samples_dataset: ''
+  pcap.shift_sum: 0.0
+  pcap.trig: PULSE1.OUT
+  pcap.trig_delay: 0
+  pcap.trig_edge: Rising
+  pcap.ts_end_capture: 'No'
+  pcap.ts_end_dataset: ''
+  pcap.ts_start_capture: 'No'
+  pcap.ts_start_dataset: ''
+  pcap.ts_trig_capture: Value
+  pcap.ts_trig_dataset: ''
+  pcomp.1.dir: Positive
+  pcomp.1.enable: ZERO
+  pcomp.1.enable_delay: 0
+  pcomp.1.inp: ZERO
+  pcomp.1.label: Position compare
+  pcomp.1.pre_start: 0
+  pcomp.1.pulses: 0.0
+  pcomp.1.relative: Absolute
+  pcomp.1.start: 0
+  pcomp.1.step: 40
+  pcomp.1.width: 30
+  pcomp.2.dir: Either
+  pcomp.2.enable: ZERO
+  pcomp.2.enable_delay: 0
+  pcomp.2.inp: ZERO
+  pcomp.2.label: Position compare
+  pcomp.2.pre_start: 0
+  pcomp.2.pulses: 0.0
+  pcomp.2.relative: Absolute
+  pcomp.2.start: 400
+  pcomp.2.step: 0
+  pcomp.2.width: 50
+  pgen.1.enable: ZERO
+  pgen.1.enable_delay: 0
+  pgen.1.label: Position generator
+  pgen.1.out_capture: 'No'
+  pgen.1.out_dataset: ''
+  pgen.1.out_offset: 0.0
+  pgen.1.out_scale: 1.0
+  pgen.1.repeats: 0.0
+  pgen.1.table:
+    position: []
+  pgen.1.trig: ZERO
+  pgen.1.trig_delay: 0
+  pgen.2.enable: ZERO
+  pgen.2.enable_delay: 0
+  pgen.2.label: Position generator
+  pgen.2.out_capture: 'No'
+  pgen.2.out_dataset: ''
+  pgen.2.out_offset: 0.0
+  pgen.2.out_scale: 1.0
+  pgen.2.repeats: 0.0
+  pgen.2.table:
+    position: []
+  pgen.2.trig: ZERO
+  pgen.2.trig_delay: 0
+  pulse.1.delay: 0.0
+  pulse.1.enable: ZERO
+  pulse.1.enable_delay: 0
+  pulse.1.label: Begin FGS on trig
+  pulse.1.pulses: 1.0
+  pulse.1.step: 0.0
+  pulse.1.trig: SEQ1.OUTA
+  pulse.1.trig_delay: 0
+  pulse.1.trig_edge: Rising
+  pulse.1.width: 0.0001
+  pulse.2.delay: 0.0
+  pulse.2.enable: ZERO
+  pulse.2.enable_delay: 0
+  pulse.2.label: One-shot pulse delay and stretch
+  pulse.2.pulses: 0.0
+  pulse.2.step: 0.0
+  pulse.2.trig: ZERO
+  pulse.2.trig_delay: 0
+  pulse.2.trig_edge: Rising
+  pulse.2.width: 0.0
+  pulse.3.delay: 0.0
+  pulse.3.enable: ZERO
+  pulse.3.enable_delay: 0
+  pulse.3.label: One-shot pulse delay and stretch
+  pulse.3.pulses: 0.0
+  pulse.3.step: 0.0
+  pulse.3.trig: ZERO
+  pulse.3.trig_delay: 0
+  pulse.3.trig_edge: Rising
+  pulse.3.width: 0.0
+  pulse.4.delay: 0.0
+  pulse.4.enable: ZERO
+  pulse.4.enable_delay: 0
+  pulse.4.label: One-shot pulse delay and stretch
+  pulse.4.pulses: 0.0
+  pulse.4.step: 0.0
+  pulse.4.trig: ZERO
+  pulse.4.trig_delay: 0
+  pulse.4.trig_edge: Rising
+  pulse.4.width: 0.0
+  seq.1.bita: TTLIN1.VAL
+  seq.1.bita_delay: 0
+  seq.1.bitb: ZERO
+  seq.1.bitb_delay: 0
+  seq.1.bitc: ZERO
+  seq.1.bitc_delay: 0
+  seq.1.enable: ZERO
+  seq.1.enable_delay: 0
+  seq.1.label: Sequencer
+  seq.1.posa: INENC1.VAL
+  seq.1.posb: ZERO
+  seq.1.posc: ZERO
+  seq.1.prescale: 0.0
+  seq.1.repeats: 0.0
+  seq.1.table:
+    outa1: [0, 1, 0, 0, 1, 0]
+    outa2: [0, 1, 0, 0, 1, 0]
+    outb1: [0, 0, 0, 0, 0, 0]
+    outb2: [0, 0, 0, 0, 0, 0]
+    outc1: [0, 0, 0, 0, 0, 0]
+    outc2: [0, 0, 0, 0, 0, 0]
+    outd1: [0, 0, 0, 0, 0, 0]
+    outd2: [0, 0, 0, 0, 0, 0]
+    oute1: [0, 0, 0, 0, 0, 0]
+    oute2: [0, 0, 0, 0, 0, 0]
+    outf1: [0, 0, 0, 0, 0, 0]
+    outf2: [0, 0, 0, 0, 0, 0]
+    position: [0, 68581, 186581, 0, 188579, 70579]
+    repeats: [1, 1, 1, 1, 1, 1]
+    time1: [0, 0, 0, 0, 0, 0]
+    time2: [1, 1, 1, 1, 1, 1]
+    trigger:
+    - BITA=1
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - BITA=1
+    - POSA<=POSITION
+    - POSA<=POSITION
+  seq.2.bita: ZERO
+  seq.2.bita_delay: 0
+  seq.2.bitb: ZERO
+  seq.2.bitb_delay: 0
+  seq.2.bitc: ZERO
+  seq.2.bitc_delay: 0
+  seq.2.enable: ZERO
+  seq.2.enable_delay: 0
+  seq.2.label: PCOMP from table
+  seq.2.posa: ZERO
+  seq.2.posb: ZERO
+  seq.2.posc: ZERO
+  seq.2.prescale: 0.0
+  seq.2.repeats: 0.0
+  seq.2.table:
+    outa1: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
+    outa2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+    outb1: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    outb2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    outc1: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    outc2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    outd1: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    outd2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    oute1: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    oute2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    outf1: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    outf2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    position: [-1985, 2000, 6000, 10000, 14000, 18000, 22000, 26000, 30000, 34000,
+      38000, 42000, 46000, 50000, 54000, 58000, 62000, 66000, 70000, 74000, 78000,
+      82000, 86000, 90000, 94000, 98000, 102000, 106000, 110000, 114000, 117990, 117985,
+      114000, 110000, 106000, 102000, 98000, 94000, 90000, 86000, 82000, 78000, 74000,
+      70000, 66000, 62000, 58000, 54000, 50000, 46000, 42000, 38000, 34000, 30000,
+      26000, 22000, 18000, 14000, 10000, 6000, 2000, -1990]
+    repeats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    time1: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    time2: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    trigger:
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA>=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+    - POSA<=POSITION
+  sfp3_sync_in.label: sfp panda synchronizer
+  sfp3_sync_in.pos1_capture: 'No'
+  sfp3_sync_in.pos1_dataset: ''
+  sfp3_sync_in.pos1_offset: 0.0
+  sfp3_sync_in.pos1_scale: 1.0
+  sfp3_sync_in.pos2_capture: 'No'
+  sfp3_sync_in.pos2_dataset: ''
+  sfp3_sync_in.pos2_offset: 0.0
+  sfp3_sync_in.pos2_scale: 1.0
+  sfp3_sync_in.pos3_capture: 'No'
+  sfp3_sync_in.pos3_dataset: ''
+  sfp3_sync_in.pos3_offset: 0.0
+  sfp3_sync_in.pos3_scale: 1.0
+  sfp3_sync_in.pos4_capture: 'No'
+  sfp3_sync_in.pos4_dataset: ''
+  sfp3_sync_in.pos4_offset: 0.0
+  sfp3_sync_in.pos4_scale: 1.0
+  sfp3_sync_out.bit1: ZERO
+  sfp3_sync_out.bit10: ZERO
+  sfp3_sync_out.bit10_delay: 0
+  sfp3_sync_out.bit11: ZERO
+  sfp3_sync_out.bit11_delay: 0
+  sfp3_sync_out.bit12: ZERO
+  sfp3_sync_out.bit12_delay: 0
+  sfp3_sync_out.bit13: ZERO
+  sfp3_sync_out.bit13_delay: 0
+  sfp3_sync_out.bit14: ZERO
+  sfp3_sync_out.bit14_delay: 0
+  sfp3_sync_out.bit15: ZERO
+  sfp3_sync_out.bit15_delay: 0
+  sfp3_sync_out.bit16: ZERO
+  sfp3_sync_out.bit16_delay: 0
+  sfp3_sync_out.bit1_delay: 0
+  sfp3_sync_out.bit2: ZERO
+  sfp3_sync_out.bit2_delay: 0
+  sfp3_sync_out.bit3: ZERO
+  sfp3_sync_out.bit3_delay: 0
+  sfp3_sync_out.bit4: ZERO
+  sfp3_sync_out.bit4_delay: 0
+  sfp3_sync_out.bit5: ZERO
+  sfp3_sync_out.bit5_delay: 0
+  sfp3_sync_out.bit6: ZERO
+  sfp3_sync_out.bit6_delay: 0
+  sfp3_sync_out.bit7: ZERO
+  sfp3_sync_out.bit7_delay: 0
+  sfp3_sync_out.bit8: ZERO
+  sfp3_sync_out.bit8_delay: 0
+  sfp3_sync_out.bit9: ZERO
+  sfp3_sync_out.bit9_delay: 0
+  sfp3_sync_out.label: sfp panda synchronizer
+  sfp3_sync_out.pos1: ZERO
+  sfp3_sync_out.pos2: ZERO
+  sfp3_sync_out.pos3: ZERO
+  sfp3_sync_out.pos4: ZERO
+  srgate.1.enable: ZERO
+  srgate.1.enable_delay: 0
+  srgate.1.label: Reset on new row
+  srgate.1.rst: ZERO
+  srgate.1.rst_delay: 0
+  srgate.1.rst_edge: Rising
+  srgate.1.set: ZERO
+  srgate.1.set_delay: 0
+  srgate.1.set_edge: Rising
+  srgate.1.when_disabled: Set output low
+  srgate.2.enable: ZERO
+  srgate.2.enable_delay: 0
+  srgate.2.label: Set reset gate
+  srgate.2.rst: ZERO
+  srgate.2.rst_delay: 0
+  srgate.2.rst_edge: Rising
+  srgate.2.set: ZERO
+  srgate.2.set_delay: 0
+  srgate.2.set_edge: Rising
+  srgate.2.when_disabled: Set output low
+  srgate.3.enable: ZERO
+  srgate.3.enable_delay: 0
+  srgate.3.label: Set reset gate
+  srgate.3.rst: ZERO
+  srgate.3.rst_delay: 0
+  srgate.3.rst_edge: Rising
+  srgate.3.set: ZERO
+  srgate.3.set_delay: 0
+  srgate.3.set_edge: Rising
+  srgate.3.when_disabled: Set output low
+  srgate.4.enable: ZERO
+  srgate.4.enable_delay: 0
+  srgate.4.label: Set reset gate
+  srgate.4.rst: ZERO
+  srgate.4.rst_delay: 0
+  srgate.4.rst_edge: Rising
+  srgate.4.set: ZERO
+  srgate.4.set_delay: 0
+  srgate.4.set_edge: Rising
+  srgate.4.when_disabled: Set output low
+  system.ext_clock: int clock
+  system.label: System control FPGA
+  ttlin.1.label: TTL input
+  ttlin.1.term: High-Z
+  ttlin.2.label: TTL input
+  ttlin.2.term: High-Z
+  ttlin.3.label: TTL input
+  ttlin.3.term: High-Z
+  ttlin.4.label: TTL input
+  ttlin.4.term: High-Z
+  ttlin.5.label: TTL input
+  ttlin.5.term: High-Z
+  ttlin.6.label: TTL input
+  ttlin.6.term: High-Z
+  ttlout.1.label: TTL output
+  ttlout.1.val: PULSE1.OUT
+  ttlout.1.val_delay: 0
+  ttlout.10.label: TTL output
+  ttlout.10.val: ZERO
+  ttlout.10.val_delay: 0
+  ttlout.2.label: TTL output
+  ttlout.2.val: ZERO
+  ttlout.2.val_delay: 0
+  ttlout.3.label: TTL output
+  ttlout.3.val: ZERO
+  ttlout.3.val_delay: 0
+  ttlout.4.label: TTL output
+  ttlout.4.val: ZERO
+  ttlout.4.val_delay: 0
+  ttlout.5.label: TTL output
+  ttlout.5.val: ZERO
+  ttlout.5.val_delay: 0
+  ttlout.6.label: TTL output
+  ttlout.6.val: ZERO
+  ttlout.6.val_delay: 0
+  ttlout.7.label: TTL output
+  ttlout.7.val: ZERO
+  ttlout.7.val_delay: 0
+  ttlout.8.label: TTL output
+  ttlout.8.val: ZERO
+  ttlout.8.val_delay: 0
+  ttlout.9.label: TTL output
+  ttlout.9.val: ZERO
+  ttlout.9.val_delay: 0
