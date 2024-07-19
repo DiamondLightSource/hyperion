@@ -263,8 +263,9 @@ def rotation_scan_plan(
     yield from _rotation_scan_plan(motion_values, composite)
 
 
-def _cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
+def _cleanup_plan(composite: RotationScanComposite, **kwargs):
     LOGGER.info("Cleaning up after rotation scan")
+    max_vel = yield from bps.rd(composite.smargon.omega.max_velocity)
     yield from cleanup_sample_environment(composite.detector_motion, group="cleanup")
     yield from bps.abs_set(composite.smargon.omega.velocity, max_vel, group="cleanup")
     yield from make_trigger_safe(composite.zebra, group="cleanup")
@@ -274,9 +275,12 @@ def _cleanup_plan(composite: RotationScanComposite, max_vel: float, **kwargs):
 def _move_and_rotation(
     composite: RotationScanComposite,
     params: RotationScan,
-    motion_values: RotationMotionProfile,
     oav_params: OAVParameters,
 ):
+    motor_time_to_speed = yield from bps.rd(composite.smargon.omega.acceleration_time)
+    max_vel = yield from bps.rd(composite.smargon.omega.max_velocity)
+    motion_values = calculate_motion_profile(params, motor_time_to_speed, max_vel)
+
     def _div_by_1000_if_not_none(num: float | None):
         return num / 1000 if num else num
 
@@ -330,20 +334,11 @@ def rotation_scan(
     def rotation_scan_plan_with_stage_and_cleanup(
         params: RotationScan,
     ):
-        motor_time_to_speed = yield from bps.rd(
-            composite.smargon.omega.acceleration_time
-        )
-        max_vel = (
-            yield from bps.rd(composite.smargon.omega.max_velocity)
-            or DEFAULT_MAX_VELOCITY
-        )
-        motion_values = calculate_motion_profile(params, motor_time_to_speed, max_vel)
-
         eiger: EigerDetector = composite.eiger
         eiger.set_detector_parameters(params.detector_params)
 
         @bpp.stage_decorator([eiger])
-        @bpp.finalize_decorator(lambda: _cleanup_plan(composite, max_vel))
+        @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
         def rotation_with_cleanup_and_stage(params: RotationScan):
             assert composite.aperture_scatterguard.aperture_positions is not None
             LOGGER.info("setting up sample environment...")
@@ -354,7 +349,7 @@ def rotation_scan(
                 params.detector_params.detector_distance,
             )
 
-            yield from _move_and_rotation(composite, params, motion_values, oav_params)
+            yield from _move_and_rotation(composite, params, oav_params)
 
         LOGGER.info("setting up and staging eiger...")
         yield from rotation_with_cleanup_and_stage(params)
@@ -371,9 +366,6 @@ def multi_rotation_scan(
         oav_params = OAVParameters(context="xrayCentring")
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
-    max_vel = (
-        yield from bps.rd(composite.smargon.omega.max_velocity) or DEFAULT_MAX_VELOCITY
-    )
     assert composite.aperture_scatterguard.aperture_positions is not None
     LOGGER.info("setting up sample environment...")
     yield from begin_sample_environment_setup(
@@ -396,7 +388,7 @@ def multi_rotation_scan(
         }
     )
     @bpp.stage_decorator([eiger])
-    @bpp.finalize_decorator(lambda: _cleanup_plan(composite, max_vel))
+    @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
     def _multi_rotation_scan():
         for single_scan in parameters.single_rotation_scans:
 
@@ -411,21 +403,7 @@ def multi_rotation_scan(
             def rotation_scan_core(
                 params: RotationScan,
             ):
-                motor_time_to_speed = yield from bps.rd(
-                    composite.smargon.omega.acceleration_time
-                )
-                max_vel = (
-                    yield from bps.rd(composite.smargon.omega.max_velocity)
-                    or DEFAULT_MAX_VELOCITY
-                )
-                motion_values = calculate_motion_profile(
-                    single_scan,
-                    motor_time_to_speed,
-                    max_vel,
-                )
-                yield from _move_and_rotation(
-                    composite, params, motion_values, oav_params
-                )
+                yield from _move_and_rotation(composite, params, oav_params)
 
             yield from rotation_scan_core(single_scan)
 
