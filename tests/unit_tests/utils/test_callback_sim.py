@@ -1,6 +1,6 @@
 import pytest
 
-from ...conftest import CallbackSim
+from ...conftest import DocumentCapturer
 
 
 @pytest.fixture
@@ -12,25 +12,25 @@ def test_docs():
 
 
 def test_callback_sim_doc_names(test_docs):
-    CallbackSim.assert_doc(test_docs, "start")
-    CallbackSim.assert_doc(test_docs, "stop")
-    CallbackSim.assert_doc(test_docs, "restart", does_exist=False)
+    DocumentCapturer.assert_doc(test_docs, "start")
+    DocumentCapturer.assert_doc(test_docs, "stop")
+    DocumentCapturer.assert_doc(test_docs, "restart", does_exist=False)
 
 
 def test_callback_sim_has_fields(test_docs):
-    CallbackSim.assert_doc(test_docs, "start", has_fields=["uid"])
-    CallbackSim.assert_doc(test_docs, "stop", has_fields=["abc", "xyz"])
-    CallbackSim.assert_doc(
+    DocumentCapturer.assert_doc(test_docs, "start", has_fields=["uid"])
+    DocumentCapturer.assert_doc(test_docs, "stop", has_fields=["abc", "xyz"])
+    DocumentCapturer.assert_doc(
         test_docs, "start", has_fields=["uid", "bbb"], does_exist=False
     )
 
 
 def test_callback_sim_matches_fields(test_docs):
-    CallbackSim.assert_doc(test_docs, "start", matches_fields={"uid": 12345})
-    CallbackSim.assert_doc(
+    DocumentCapturer.assert_doc(test_docs, "start", matches_fields={"uid": 12345})
+    DocumentCapturer.assert_doc(
         test_docs, "stop", matches_fields={"abc": 88888, "xyz": 99999}
     )
-    CallbackSim.assert_doc(
+    DocumentCapturer.assert_doc(
         test_docs,
         "start",
         matches_fields={"abc": 88888, "xyz": 99799},
@@ -40,12 +40,12 @@ def test_callback_sim_matches_fields(test_docs):
 
 def test_callback_sim_assert_switch(test_docs):
     with pytest.raises(AssertionError):
-        CallbackSim.assert_doc(test_docs, "restart")
+        DocumentCapturer.assert_doc(test_docs, "restart")
 
     with pytest.raises(AssertionError):
-        CallbackSim.assert_doc(test_docs, "start", has_fields=["uid", "bbb"])
+        DocumentCapturer.assert_doc(test_docs, "start", has_fields=["uid", "bbb"])
 
     with pytest.raises(AssertionError):
-        CallbackSim.assert_doc(
+        DocumentCapturer.assert_doc(
             test_docs, "start", matches_fields={"abc": 88888, "xyz": 99799}
         )

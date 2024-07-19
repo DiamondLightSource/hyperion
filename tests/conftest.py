@@ -897,7 +897,10 @@ def sim_run_engine():
     return RunEngineSimulator()
 
 
-class CallbackSim:
+class DocumentCapturer:
+    """A utility which can be subscribed to the RunEngine in place of a callback in order
+    to intercept documents and make assertions about their contents"""
+
     def __init__(self) -> None:
         self.docs_received: list[tuple[str, dict[str, Any]]] = []
 
@@ -911,6 +914,11 @@ class CallbackSim:
         has_fields: Sequence[str] = [],
         matches_fields: dict[str, Any] = {},
     ):
+        """Returns True if the given document:
+        - has the same name
+        - contains all the fields in has_fields
+        - contains all the fields in matches_fields with the same content"""
+
         return (
             doc[0] == name
             and all(f in doc[1].keys() for f in has_fields)
@@ -924,10 +932,14 @@ class CallbackSim:
         has_fields: Sequence[str] = [],
         matches_fields: dict[str, Any] = {},
     ):
+        """Get all the docs from docs which:
+        - have the same name
+        - contain all the fields in has_fields
+        - contain all the fields in matches_fields with the same content"""
         return list(
             filter(
                 partial(
-                    CallbackSim.is_match,
+                    DocumentCapturer.is_match,
                     name=name,
                     has_fields=has_fields,
                     matches_fields=matches_fields,
@@ -946,7 +958,7 @@ class CallbackSim:
     ):
         """Assert that a matching doc has been recieved by the sim,
         and returns the first match if it is meant to exist"""
-        matches = CallbackSim.get_matches(docs, name, has_fields, matches_fields)
+        matches = DocumentCapturer.get_matches(docs, name, has_fields, matches_fields)
         if does_exist:
             assert matches
             return matches[0]
@@ -960,8 +972,9 @@ class CallbackSim:
         has_fields: Sequence[str] = [],
         matches_fields: dict[str, Any] = {},
     ):
+        """return all the docs from the list of docs until the first matching one"""
         for i, doc in enumerate(docs):
-            if CallbackSim.is_match(doc, name, has_fields, matches_fields):
+            if DocumentCapturer.is_match(doc, name, has_fields, matches_fields):
                 return docs[: i + 1]
         raise ValueError(f"Doc {name=}, {has_fields=}, {matches_fields=} not found")
 
@@ -972,8 +985,9 @@ class CallbackSim:
         has_fields: Sequence[str] = [],
         matches_fields: dict[str, Any] = {},
     ):
+        """return all the docs from the list of docs after the first matching one"""
         for i, doc in enumerate(docs):
-            if CallbackSim.is_match(doc, name, has_fields, matches_fields):
+            if DocumentCapturer.is_match(doc, name, has_fields, matches_fields):
                 return docs[i:]
         raise ValueError(f"Doc {name=}, {has_fields=}, {matches_fields=} not found")
 
@@ -983,7 +997,7 @@ class CallbackSim:
         match_data_keys_list: Sequence[Sequence[str]],
     ):
         for event_data_keys in match_data_keys_list:
-            docs = CallbackSim.get_docs_from(docs, "event")
+            docs = DocumentCapturer.get_docs_from(docs, "event")
             doc = docs.pop(0)[1]["data"]
             assert all(
                 k in doc.keys() for k in event_data_keys

@@ -31,7 +31,7 @@ from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 from ...conftest import (
-    CallbackSim,
+    DocumentCapturer,
     RunEngineSimulator,
     extract_metafile,
     fake_read,
@@ -158,7 +158,7 @@ def test_full_multi_rotation_plan_docs_emitted(
     fake_create_rotation_devices: RotationScanComposite,
     oav_parameters_for_rotation: OAVParameters,
 ):
-    callback_sim = CallbackSim()
+    callback_sim = DocumentCapturer()
     _run_multi_rotation_plan(
         RE,
         test_multi_rotation_params,
@@ -169,37 +169,37 @@ def test_full_multi_rotation_plan_docs_emitted(
     docs = callback_sim.docs_received
 
     assert (
-        outer_plan_start_doc := CallbackSim.assert_doc(
+        outer_plan_start_doc := DocumentCapturer.assert_doc(
             docs, "start", matches_fields=({"plan_name": "multi_rotation_scan"})
         )
     )
     outer_uid = outer_plan_start_doc[1]["uid"]
-    inner_run_docs = CallbackSim.get_docs_until(
+    inner_run_docs = DocumentCapturer.get_docs_until(
         docs,
         "stop",
         matches_fields=({"run_start": outer_uid, "exit_status": "success"}),
     )[1:-1]
 
     for scan in test_multi_rotation_params.single_rotation_scans:
-        inner_run_docs = CallbackSim.get_docs_from(
+        inner_run_docs = DocumentCapturer.get_docs_from(
             inner_run_docs,
             "start",
             matches_fields={"subplan_name": "rotation_scan_with_cleanup"},
         )
-        scan_docs = CallbackSim.get_docs_until(
+        scan_docs = DocumentCapturer.get_docs_until(
             inner_run_docs,
             "stop",
             matches_fields={"run_start": inner_run_docs[0][1]["uid"]},
         )
-        assert CallbackSim.is_match(
+        assert DocumentCapturer.is_match(
             scan_docs[0],
             "start",
             has_fields=["trigger_zocalo_on", "hyperion_parameters"],
         )
         params = RotationScan(**json.loads(scan_docs[0][1]["hyperion_parameters"]))
         assert params == scan
-        assert len(events := CallbackSim.get_matches(scan_docs, "event")) == 3
-        CallbackSim.assert_events_and_data_in_order(
+        assert len(events := DocumentCapturer.get_matches(scan_docs, "event")) == 3
+        DocumentCapturer.assert_events_and_data_in_order(
             events,
             [
                 ["eiger_odin_file_writer_id"],
@@ -212,7 +212,7 @@ def test_full_multi_rotation_plan_docs_emitted(
                 ],
             ],
         )
-        inner_run_docs = CallbackSim.get_docs_from(
+        inner_run_docs = DocumentCapturer.get_docs_from(
             inner_run_docs,
             "stop",
             matches_fields={"run_start": inner_run_docs[0][1]["uid"]},
