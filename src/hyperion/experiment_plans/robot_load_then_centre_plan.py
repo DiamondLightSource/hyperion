@@ -211,13 +211,13 @@ def robot_load_then_centre_plan(
         )
 
         # The lower gonio must be in the correct position for the robot load and we
-        # want to put it back afterwards. Note we don't wait as we assume the lower
-        # gonio move is quicker than the robot takes to get to the load position.
+        # want to put it back afterwards. Note we don't wait the robot is interlocked
+        # to the lower gonio and the  move is quicker than the robot takes to get to the
+        # load position.
         yield from bpp.contingency_wrapper(
             home_and_reset_wrapper(
                 robot_load_plan,
                 composite.lower_gonio,
-                CONST.HARDWARE.LOWER_GONIO_ROBOT_LOAD_POSITION,
                 BartRobot.LOAD_TOLERANCE_MM,
                 CONST.HARDWARE.CRYOJET_MARGIN_MM,
                 "lower_gonio",

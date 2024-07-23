@@ -57,7 +57,6 @@ class DocDescriptorNames:
 class HardwareConstants:
     OAV_REFRESH_DELAY = 0.3
     PANDA_FGS_RUN_UP_DEFAULT = 0.17
-    LOWER_GONIO_ROBOT_LOAD_POSITION = 0
     CRYOJET_MARGIN_MM = 0.2
 
 
