@@ -1,24 +1,17 @@
 import os
-import sys
-from argparse import ArgumentParser
 from enum import Enum
 from pathlib import Path
-from typing import cast
 
 import bluesky.plan_stubs as bps
 from blueapi.core import MsgGenerator
-from bluesky import RunEngine
-from dodal.beamlines import module_name_for_beamline
 from dodal.common.beamlines.beamline_utils import get_directory_provider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
-from dodal.utils import make_all_devices
-from ophyd_async.core import load_device, save_device
+from ophyd_async.core import load_device
 from ophyd_async.panda import (
     HDFPanda,
     SeqTable,
     SeqTableRow,
     SeqTrigger,
-    phase_sorter,
     seq_table_from_rows,
 )
 
@@ -240,41 +233,3 @@ def set_and_create_panda_directory(panda_directory: Path) -> MsgGenerator:
         await get_directory_provider().update(directory=panda_directory)
 
     yield from bps.wait_for([set_panda_dir])
-
-
-def _save_panda_to_file(RE: RunEngine, panda: HDFPanda, path: str):
-    def save_to_file():
-        yield from save_device(panda, path, sorter=phase_sorter)
-
-    RE(save_to_file())
-
-
-def _main():
-    parser = ArgumentParser(description="Save a device to yaml")
-    parser.add_argument("beamline", help="beamline to save from e.g. i03")
-    parser.add_argument("device_name", help="name of the device e.g. panda")
-    parser.add_argument("output_file", help="output filename")
-    args = parser.parse_args()
-    beamline = args.beamline
-    device_name = args.device_name
-    output_file = args.output_file
-
-    print(f"Saving to {output_file} from {device_name} on {beamline}")
-    os.environ["BEAMLINE"] = beamline
-    RE = RunEngine()
-
-    print("Creating devices...")
-    module_name = module_name_for_beamline(beamline)
-    devices, exceptions = make_all_devices(
-        f"dodal.beamlines.{module_name}", include_skipped=False
-    )
-    panda = devices[device_name]
-
-    print("Saving to file...")
-    _save_panda_to_file(RE, cast(HDFPanda, panda), output_file)
-    print("Done.")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(_main())
