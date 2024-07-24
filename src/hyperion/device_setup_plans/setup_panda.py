@@ -33,29 +33,36 @@ class PcapArm(Enum):
     DISARMED = "Disarm"
 
 
-def get_seq_table(
+def _get_seq_table(
     parameters: PandAGridScanParams, exposure_distance_mm, time_between_steps_ms
 ) -> SeqTable:
     """
-    -Exposure distance is the distance travelled by the sample each time the detector is exposed: exposure time * sample velocity
-    -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
-    -When we wait for the position to be greater/lower, give a safe distance (X_STEP_SIZE/2 * MM_TO_ENCODER counts) to ensure the final trigger point
-    is captured
+    Generate the sequencer table for the panda.
+
+    - Sending a 'trigger' means trigger PCAP internally and send signal to Eiger via physical panda output
+
     SEQUENCER TABLE:
-        1:Wait for physical trigger from motion script to mark start of scan / change of direction
 
-        2:Wait for POSA (X2) to be greater than X_START
-        3:Send out x_steps triggers every box_width / x_speed time
-
-        4:Wait for physical trigger from motion script to mark change of direction
-        5:Wait for POSA (X2) to be less than X_START + X_STEP_SIZE + exposure distance, then
-            send a signal out every (minimum eiger exposure time + eiger dead time)
-        6:Wait for POSA (X2) to be less than (X_START - safe distance + exposure distance), then cut out signal
-        7:Go back to step one.
+        1. Wait for physical trigger from motion script to mark start of scan / change of direction
+        2. Wait for POSA (X2) to be greater than X_START and send 1 trigger
+        3. Send out the remaining x_steps - 1 triggers every time_between_steps_ms
+        4. Wait for physical trigger from motion script to mark change of direction
+        5. Wait for POSA (X2) to be less than X_START + X_STEP_SIZE * x_steps + exposure distance, then
+            send 1 trigger
+        6. Send the remaining x_steps - 1 triggers every time_between_steps_ms
+        7. Go back to step one.
 
         For a more detailed explanation and a diagram, see https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning
 
         For documentation on Panda itself, see https://pandablocks.github.io/PandABlocks-FPGA/master/index.html
+
+    Args:
+        exposure_distance_mm: The distance travelled by the sample each time the detector is exposed: exposure time * sample velocity
+        time_between_steps_ms: The time taken to traverse between each grid step.
+        parameters: Parameters for the panda gridscan
+
+    Returns:
+        An instance of SeqTable describing the panda sequencer table
     """
 
     start_of_grid_x_counts = int(parameters.x_start * MM_TO_ENCODER_COUNTS)
@@ -180,7 +187,7 @@ def setup_panda_for_flyscan(
 
     exposure_distance_mm = sample_velocity_mm_per_s * exposure_time_s
 
-    table = get_seq_table(parameters, exposure_distance_mm, time_between_x_steps_ms)
+    table = _get_seq_table(parameters, exposure_distance_mm, time_between_x_steps_ms)
 
     yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
