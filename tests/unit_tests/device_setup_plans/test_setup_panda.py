@@ -98,24 +98,6 @@ def test_setup_panda_correctly_configures_table(
     sim_run_engine: RunEngineSimulator,
     panda,
 ):
-    """The table should satisfy the following requirements:
-    -All the numpy arrays within the Seqtable should have a length of 6
-
-    -The position array should correspond to the following logic:
-        1.Wait for physical trigger
-        2.Wait for POSA > x_start, send 1 trigger
-        3.Send the remaining n-1 triggers
-        4.Wait for physical trigger (end of direction)
-        5.Wait for POSA to go below the end of the row
-        6.Wait for POSA to go below X_start
-
-    -Time1 should be a 0 array, since we don't use the first phase in any of our panda logic
-    -Time2 should be a length 6 array all set to 1, so that each of the 6 steps run as quickly as possible
-
-    -We want to send triggers between step 2 and 3, and between step 4 and 5, so we want the outa2 array
-    to look like [0,1,0,0,1,0]
-    """
-
     sample_velocity_mm_per_s = get_smargon_speed(x_step_size, time_between_x_steps_ms)
     params = PandAGridScanParams(
         x_steps=x_steps,
