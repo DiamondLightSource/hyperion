@@ -1,3 +1,4 @@
+from functools import partial
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -28,7 +29,7 @@ from ...conftest import raw_params_from_file
 
 @pytest.fixture
 def robot_load_composite(
-    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer
+    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer, lower_gonio
 ) -> RobotLoadThenCentreComposite:
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
@@ -40,6 +41,7 @@ def robot_load_composite(
     composite.aperture_scatterguard.set = MagicMock(return_value=NullStatus())
     composite.oav = oav
     composite.webcam = webcam
+    composite.lower_gonio = lower_gonio
     composite.thawer = thawer
     return composite
 
@@ -354,6 +356,49 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
     webcam.trigger.assert_called_once()
     assert (await webcam.filename.get_value()) == "TIME_webcam_after_load"
     assert (await webcam.directory.get_value()) == TEST_DIRECTORY
+
+
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan",
+    MagicMock(),
+)
+def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_and_back(
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
+    sim_run_engine,
+):
+    initial_values = {"x": 0.11, "y": 0.12, "z": 0.13}
+
+    def get_read(axis, msg):
+        return {f"lower_gonio-{axis}": {"value": initial_values[axis]}}
+
+    for axis in initial_values.keys():
+        sim_run_engine.add_handler(
+            "read", f"lower_gonio-{axis}", partial(get_read, axis)
+        )
+
+    messages = sim_run_engine.simulate_plan(
+        robot_load_then_centre(
+            robot_load_composite,
+            robot_load_then_centre_params_no_energy,
+        )
+    )
+
+    for axis in initial_values.keys():
+        messages = sim_run_engine.assert_message_and_return_remaining(
+            messages,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == f"lower_gonio-{axis}"
+            and msg.args == (0,),
+        )
+
+    for axis, initial in initial_values.items():
+        messages = sim_run_engine.assert_message_and_return_remaining(
+            messages,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == f"lower_gonio-{axis}"
+            and msg.args == (initial,),
+        )
 
 
 @patch(
