@@ -153,7 +153,7 @@ def test_setup_panda_correctly_configures_table(
     table = table_msg.args[0]
 
     PULSE_WIDTH_US = 1
-    SPACE_WIDTH_US = time_between_x_steps_ms * 1000 - PULSE_WIDTH_US
+    SPACE_WIDTH_US = int(time_between_x_steps_ms * 1000 - PULSE_WIDTH_US)
     expected_seq_rows: list[SeqRow] = [
         SeqRow(1, SeqTrigger.BITA_1, 0, 0, 0, 1, 0),
         SeqRow(
