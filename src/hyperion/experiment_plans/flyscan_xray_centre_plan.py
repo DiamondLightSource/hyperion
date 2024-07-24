@@ -77,10 +77,6 @@ from hyperion.utils.aperturescatterguard import (
 )
 from hyperion.utils.context import device_composite_from_context
 
-PANDA_SETUP_PATH = (
-    "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_pcap_ignore_seq.yaml"
-)
-
 
 class SmargonSpeedException(Exception):
     pass
@@ -529,7 +525,6 @@ def _panda_triggering_setup(
 
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
-        PANDA_SETUP_PATH,
         parameters.panda_FGS_params,
         initial_xyz[0],
         parameters.exposure_time_s,

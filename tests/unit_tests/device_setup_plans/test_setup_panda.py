@@ -45,7 +45,6 @@ def run_simulating_setup_panda_functions(
         sim.simulate_plan(
             setup_panda_for_flyscan(
                 mock_panda,
-                "path",
                 PandAGridScanParams(transmission_fraction=0.01),
                 1,
                 0.1,
@@ -112,7 +111,6 @@ def test_setup_panda_correctly_configures_table(
     msgs = sim_run_engine.simulate_plan(
         setup_panda_for_flyscan(
             panda,
-            "tests/test_data/panda_count_based_gridscan_seq.yaml",
             params,
             0,
             exposure_time_s,
@@ -227,7 +225,6 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
         RE(
             setup_panda_for_flyscan(
                 MagicMock(),
-                "path",
                 PandAGridScanParams(transmission_fraction=0.01),
                 1,
                 0.1,

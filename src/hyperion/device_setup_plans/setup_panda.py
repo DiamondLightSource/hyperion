@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+from importlib import resources
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
@@ -15,6 +16,7 @@ from ophyd_async.panda import (
     seq_table_from_rows,
 )
 
+import hyperion.resources.panda
 from hyperion.log import LOGGER
 
 MM_TO_ENCODER_COUNTS = 200000
@@ -142,7 +144,6 @@ def _get_seq_table(
 
 def setup_panda_for_flyscan(
     panda: HDFPanda,
-    config_yaml_path: str,
     parameters: PandAGridScanParams,
     initial_x: float,
     exposure_time_s: float,
@@ -156,7 +157,6 @@ def setup_panda_for_flyscan(
 
     Args:
         panda (HDFPanda): The PandA Ophyd device
-        config_yaml_path (str): Path to the yaml file containing the desired PandA PVs
         parameters (PandAGridScanParams): Grid parameters
         initial_x (float): Motor positions at time of PandA setup
         exposure_time_s (float): Detector exposure time per trigger
@@ -172,7 +172,10 @@ def setup_panda_for_flyscan(
     assert time_between_x_steps_ms * 1000 >= exposure_time_s
     assert sample_velocity_mm_per_s * exposure_time_s < parameters.x_step_size
 
-    yield from load_device(panda, config_yaml_path)
+    with resources.as_file(
+        resources.files(hyperion.resources.panda) / "panda-gridscan.yaml"
+    ) as config_yaml_path:
+        yield from load_device(panda, str(config_yaml_path))
 
     # Home the PandA X encoder using current motor position
     yield from bps.abs_set(
