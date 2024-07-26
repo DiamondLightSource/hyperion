@@ -8,6 +8,7 @@ import bluesky.preprocessors as bpp
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine, RunEngineResult
+from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
 from dodal.common.beamlines.beamline_utils import clear_device
@@ -998,30 +999,30 @@ class TestFlyscanXrayCentrePlan:
         )
         sim_run_engine.add_handler(
             "read",
-            "synchrotron-synchrotron_mode",
             lambda msg: {"values": {"value": SynchrotronMode.USER}},
+            "synchrotron-synchrotron_mode",
         )
         msgs = sim_run_engine.simulate_plan(
             run_gridscan(
                 fake_fgs_composite, test_fgs_params_panda_zebra, feature_controlled
             )
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "kickoff"
             and msg.obj == feature_controlled.fgs_motors,
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "create"
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "read" and msg.obj.name == "eiger_bit_depth",
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"
         )
 

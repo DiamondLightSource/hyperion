@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.eiger import EigerDetector
@@ -100,17 +101,17 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params: RobotLoadThenCentre,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     sim_run_engine.add_handler(
         "read",
-        "dcm-energy_in_kev",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(robot_load_composite, robot_load_then_centre_params)
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         messages, lambda msg: msg.command == "set_energy_plan"
     )
     params_passed: PinTipCentreThenXrayCentre = mock_centring_plan.call_args[0][1]
@@ -128,12 +129,12 @@ def test_when_plan_run_with_requested_energy_specified_energy_change_executes(
 def test_robot_load_then_centre_doesnt_set_energy_if_not_specified_and_current_energy_set_on_eiger(
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     sim_run_engine.add_handler(
         "read",
-        "dcm-energy_in_kev",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
     )
     messages = sim_run_engine.simulate_plan(
         robot_load_then_centre(
@@ -150,7 +151,7 @@ def run_simulating_smargon_wait(
     robot_load_then_centre_params,
     robot_load_composite,
     total_disabled_reads,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     robot_load_composite.smargon = instantiate_fake_device(Smargon, name="smargon")
     robot_load_composite.eiger = instantiate_fake_device(EigerDetector, name="eiger")
@@ -164,13 +165,11 @@ def run_simulating_smargon_wait(
 
     sim_run_engine.add_handler(
         "read",
-        "dcm-energy_in_kev",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
     )
     sim_run_engine.add_handler(
-        "read",
-        "smargon-disabled",
-        return_not_disabled_after_reads,
+        "read", return_not_disabled_after_reads, "smargon-disabled"
     )
 
     return sim_run_engine.simulate_plan(
@@ -365,7 +364,7 @@ async def test_when_take_snapshots_called_then_filename_and_directory_set_and_de
 def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_and_back(
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     initial_values = {"x": 0.11, "y": 0.12, "z": 0.13}
 
@@ -374,7 +373,7 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
 
     for axis in initial_values.keys():
         sim_run_engine.add_handler(
-            "read", f"lower_gonio-{axis}", partial(get_read, axis)
+            "read", partial(get_read, axis), f"lower_gonio-{axis}"
         )
 
     messages = sim_run_engine.simulate_plan(
@@ -385,7 +384,7 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
     )
 
     for axis in initial_values.keys():
-        messages = sim_run_engine.assert_message_and_return_remaining(
+        messages = assert_message_and_return_remaining(
             messages,
             lambda msg: msg.command == "set"
             and msg.obj.name == f"lower_gonio-{axis}"
@@ -393,7 +392,7 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
         )
 
     for axis, initial in initial_values.items():
-        messages = sim_run_engine.assert_message_and_return_remaining(
+        messages = assert_message_and_return_remaining(
             messages,
             lambda msg: msg.command == "set"
             and msg.obj.name == f"lower_gonio-{axis}"
@@ -412,14 +411,14 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
-    sim_run_engine,
+    sim_run_engine: RunEngineSimulator,
 ):
     robot_load_then_centre_params_no_energy.thawing_time = (thaw_time := 50)
 
     sim_run_engine.add_handler(
         "read",
-        "dcm-energy_in_kev",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
+        "dcm-energy_in_kev",
     )
 
     messages = sim_run_engine.simulate_plan(
@@ -429,7 +428,7 @@ def test_when_plan_run_then_thawing_turned_on_for_expected_time(
         )
     )
 
-    sim_run_engine.assert_message_and_return_remaining(
+    assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "thawer-thaw_for_time_s"

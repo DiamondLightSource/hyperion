@@ -218,9 +218,7 @@ def test_oav_rotation_snapshot_triggered_event(
     mock_ispyb_conn, dummy_rotation_params, rotation_start_outer_doc_without_snapshots
 ):
     callback = RotationISPyBCallback()
-    callback.activity_gated_start(
-        rotation_start_outer_doc_without_snapshots
-    )  # pyright: ignore
+    callback.activity_gated_start(rotation_start_outer_doc_without_snapshots)  # pyright: ignore
     callback.activity_gated_start(
         TestData.test_rotation_start_main_document  # pyright: ignore
     )
@@ -301,9 +299,9 @@ def test_comment_correct_after_hardware_read(
 ):
     callback = RotationISPyBCallback()
     test_rotation_start_outer_document["hyperion_parameters"] = (
-        test_rotation_start_outer_document["hyperion_parameters"].replace(
-            '"comment": "test"', '"comment": "a lovely unit test"'
-        )
+        test_rotation_start_outer_document[
+            "hyperion_parameters"
+        ].replace('"comment": "test"', '"comment": "a lovely unit test"')
     )
     callback.activity_gated_start(test_rotation_start_outer_document)  # pyright: ignore
     callback.activity_gated_start(

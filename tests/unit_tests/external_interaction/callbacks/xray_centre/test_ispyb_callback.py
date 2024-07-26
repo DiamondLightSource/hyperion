@@ -51,9 +51,7 @@ EXPECTED_DATA_COLLECTION_3D_XZ = EXPECTED_DATA_COLLECTION_3D_XY | {
 class TestXrayCentreISPyBCallback:
     def test_activity_gated_start_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan3d_start_document
-        )  # pyright: ignore
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         assert_upsert_call_with(
             mx_acq.upsert_data_collection_group.mock_calls[0],  # pyright: ignore
@@ -79,9 +77,7 @@ class TestXrayCentreISPyBCallback:
 
     def test_hardware_read_event_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan3d_start_document
-        )  # pyright: ignore
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
@@ -117,9 +113,7 @@ class TestXrayCentreISPyBCallback:
 
     def test_flux_read_events_3d(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan3d_start_document
-        )  # pyright: ignore
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         callback.activity_gated_descriptor(
             TestData.test_descriptor_document_pre_data_collection
@@ -172,9 +166,7 @@ class TestXrayCentreISPyBCallback:
 
     def test_activity_gated_event_oav_snapshot_triggered(self, mock_ispyb_conn):
         callback = GridscanISPyBCallback()
-        callback.activity_gated_start(
-            TestData.test_gridscan3d_start_document
-        )  # pyright: ignore
+        callback.activity_gated_start(TestData.test_gridscan3d_start_document)  # pyright: ignore
         mx_acq = mx_acquisition_from_conn(mock_ispyb_conn)
         mx_acq.upsert_data_collection_group.reset_mock()
         mx_acq.upsert_data_collection.reset_mock()
