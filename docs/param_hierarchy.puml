@@ -1,4 +1,4 @@
-@startuml
+@startuml hyperion_parameter_model
 'https://plantuml.com/class-diagram
 title Hyperion Parameter Model
 
@@ -13,10 +13,9 @@ package Mixins {
     class XyzStarts
     class OptionalGonioAngleStarts
     class SplitScan
+    class RotationScanPerSweep
+    class RotationExperiment
 }
-
-class HyperionParameters
-note bottom: Base class for all experiment parameter models
 
 package Experiments {
     class DiffractionExperiment
@@ -25,10 +24,15 @@ package Experiments {
     class GridScanWithEdgeDetect
     class PinTipCentreThenXrayCentre
     class RotationScan
+    class MultiRotationScan
     class RobotLoadThenCentre
     class SpecifiedGridScan
     class ThreeDGridScan
 }
+
+class HyperionParameters
+note bottom: Base class for all experiment parameter models
+
 class TemporaryIspybExtras
 note bottom: To be removed
 
@@ -45,6 +49,10 @@ BaseModel <|-- WithScan
 BaseModel <|-- XyzStarts
 
 RotationScan *-- TemporaryIspybExtras
+MultiRotationScan *-- TemporaryIspybExtras
+OptionalGonioAngleStarts <|-- RotationScanPerSweep
+OptionalXyzStarts  <|-- RotationScanPerSweep
+DiffractionExperimentWithSample <|-- RotationExperiment
 HyperionParameters <|-- DiffractionExperiment
 WithSnapshot <|-- DiffractionExperiment
 DiffractionExperiment <|-- DiffractionExperimentWithSample
@@ -58,8 +66,12 @@ WithScan <|-- SpecifiedGridScan
 SpecifiedGridScan <|-- ThreeDGridScan
 SplitScan <|-- ThreeDGridScan
 WithOavCentring <|-- GridCommon
-DiffractionExperimentWithSample <|-- RotationScan
-OptionalXyzStarts <|-- RotationScan
+WithScan <|-- RotationScan
+RotationScanPerSweep <|-- RotationScan
+MultiRotationScan *-- RotationScanPerSweep
+RotationExperiment <|-- RotationScan
+RotationExperiment <|-- MultiRotationScan
+SplitScan <|-- MultiRotationScan
 XyzStarts <|-- SpecifiedGridScan
 OptionalGonioAngleStarts <|-- GridCommon
 OptionalGonioAngleStarts <|-- RotationScan

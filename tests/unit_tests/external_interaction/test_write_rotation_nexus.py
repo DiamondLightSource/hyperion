@@ -17,6 +17,7 @@ from hyperion.experiment_plans.rotation_scan_plan import RotationScanComposite
 from hyperion.external_interaction.callbacks.rotation.nexus_callback import (
     RotationNexusFileCallback,
 )
+from hyperion.external_interaction.nexus.write_nexus import NexusWriter
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
@@ -470,3 +471,12 @@ def _compare_actual_and_expected(path: list[str], actual, expected, exceptions: 
                         actual_value,
                         expected_value,  # type: ignore
                     ), f"Actual and expected values differ for {item_path_str}: {actual_value_str} != {expected_value_str}"
+
+
+def test_override_parameters_override(test_params: RotationScan):
+    writer = NexusWriter(
+        test_params, (1, 2, 3), {}, full_num_of_images=82367, meta_data_run_number=9852
+    )
+    assert writer.full_num_of_images != test_params.num_images
+    assert writer.full_num_of_images == 82367
+    assert writer.data_filename == f"{test_params.file_name}_9852"

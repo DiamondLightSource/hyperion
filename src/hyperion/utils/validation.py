@@ -98,7 +98,6 @@ def fake_create_rotation_devices():
     )
 
     set_mock_value(smargon.omega.max_velocity, 131)
-
     set_mock_value(dcm.energy_in_kev.user_readback, 12700)
     oav.zoom_controller.fvst.sim_put("1.0x")
 

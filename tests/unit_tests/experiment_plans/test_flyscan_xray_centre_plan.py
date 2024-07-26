@@ -541,7 +541,6 @@ class TestFlyscanXrayCentrePlan:
                     fgs,
                     fake_fgs_composite.eiger,
                     fake_fgs_composite.synchrotron,
-                    "zocalo environment",
                     [
                         test_fgs_params.scan_points_first_grid,
                         test_fgs_params.scan_points_second_grid,
@@ -557,7 +556,6 @@ class TestFlyscanXrayCentrePlan:
                 fgs,
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
-                "zocalo environment",
                 [
                     test_fgs_params.scan_points_first_grid,
                     test_fgs_params.scan_points_second_grid,
@@ -941,10 +939,12 @@ class TestFlyscanXrayCentrePlan:
         assert isinstance(zocalo_cb := ispyb_cb.emit_cb, ZocaloCallback)
         zocalo_env = "dev_env"
 
-        zocalo_cb.start({CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS})  # type: ignore
-        assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
-
         mock_zocalo_trigger_class.return_value = (mock_zocalo_trigger := MagicMock())
+
+        zocalo_cb.start(
+            {CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS, "zocalo_environment": zocalo_env}  # type: ignore
+        )
+        assert zocalo_cb.triggering_plan == CONST.PLAN.DO_FGS
 
         fake_fgs_composite.eiger.unstage = MagicMock()
         fake_fgs_composite.eiger.odin.file_writer.id.sim_put("test/filename")  # type: ignore
@@ -957,7 +957,6 @@ class TestFlyscanXrayCentrePlan:
                 fake_fgs_composite.zebra_fast_grid_scan,
                 fake_fgs_composite.eiger,
                 fake_fgs_composite.synchrotron,
-                zocalo_env,
                 scan_points=create_dummy_scan_spec(x_steps, y_steps, z_steps),
                 scan_start_indices=[0, x_steps * y_steps],
             )

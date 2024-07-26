@@ -42,10 +42,11 @@ class ZocaloCallback(CallbackBase):
         ISPYB_LOGGER.info("Zocalo handler received start document.")
         if triggering_plan := doc.get(CONST.TRIGGER.ZOCALO):
             self.triggering_plan = triggering_plan
-        if self.triggering_plan and doc.get("subplan_name") == self.triggering_plan:
             assert isinstance(zocalo_environment := doc.get("zocalo_environment"), str)
             ISPYB_LOGGER.info(f"Zocalo environment set to {zocalo_environment}.")
             self.zocalo_interactor = ZocaloTrigger(zocalo_environment)
+
+        if self.triggering_plan and doc.get("subplan_name") == self.triggering_plan:
             self.run_uid = doc.get("uid")
             assert isinstance(scan_points := doc.get("scan_points"), list)
             if (

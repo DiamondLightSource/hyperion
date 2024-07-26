@@ -90,6 +90,6 @@ class GridscanNexusFileCallback(PlanReactiveCallback):
                     doc["data"]["eiger_bit_depth"]
                 )
                 nexus_writer.create_nexus_file(vds_data_type)
-                NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.full_filename}")
+                NEXUS_LOGGER.info(f"Nexus file created at {nexus_writer.data_filename}")
 
         return super().activity_gated_event(doc)

@@ -199,13 +199,12 @@ async def test_full_rotation_plan_smargon_settings(
 
     assert await smargon.phi.user_readback.get_value() == params.phi_start_deg
     assert await smargon.chi.user_readback.get_value() == params.chi_start_deg
-    assert await smargon.x.user_readback.get_value() == params.x_start_um
-    assert await smargon.y.user_readback.get_value() == params.y_start_um
-    assert await smargon.z.user_readback.get_value() == params.z_start_um
+    assert await smargon.x.user_readback.get_value() == params.x_start_um / 1000  # type: ignore
+    assert await smargon.y.user_readback.get_value() == params.y_start_um / 1000  # type: ignore
+    assert await smargon.z.user_readback.get_value() == params.z_start_um / 1000  # type: ignore
     assert (
         # 4 * snapshots, restore omega, 1 * rotation sweep
-        omega_set.call_count
-        == 4 + 1 + 1
+        omega_set.call_count == 4 + 1 + 1
     )
     # 1 to max vel in outer plan, 1 to max vel in setup_oav_snapshot_plan, 1 set before rotation, 1 restore in cleanup plan
     assert omega_velocity_set.call_count == 4
@@ -248,7 +247,7 @@ async def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
         get_mock_put(motor.user_setpoint).assert_not_called()  # type: ignore
 
 
-@patch("hyperion.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)
+@patch("hyperion.experiment_plans.rotation_scan_plan._cleanup_plan", autospec=True)
 @patch("bluesky.plan_stubs.wait", autospec=True)
 def test_cleanup_happens(
     bps_wait: MagicMock,
@@ -293,28 +292,30 @@ def test_rotation_plan_reads_hardware(
     fake_create_rotation_devices: RotationScanComposite,
     test_rotation_params,
     motion_values,
-    sim_run_engine,
+    sim_run_engine_for_rotation: RunEngineSimulator,
 ):
-    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
-    msgs = sim_run_engine.simulate_plan(
+    _add_sim_handlers_for_normal_operation(
+        fake_create_rotation_devices, sim_run_engine_for_rotation
+    )
+    msgs = sim_run_engine_for_rotation.simulate_plan(
         rotation_scan_plan(
             fake_create_rotation_devices, test_rotation_params, motion_values
         )
     )
 
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = sim_run_engine_for_rotation.assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "create"
         and msg.kwargs["name"] == CONST.DESCRIPTORS.HARDWARE_READ_PRE,
     )
     msgs_in_event = list(takewhile(lambda msg: msg.command != "save", msgs))
-    sim_run_engine.assert_message_and_return_remaining(
+    sim_run_engine_for_rotation.assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-x"
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    sim_run_engine_for_rotation.assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-y"
     )
-    sim_run_engine.assert_message_and_return_remaining(
+    sim_run_engine_for_rotation.assert_message_and_return_remaining(
         msgs_in_event, lambda msg: msg.command == "read" and msg.obj.name == "smargon-z"
     )
 
@@ -384,7 +385,7 @@ def test_rotation_scan_moves_gonio_to_start_before_snapshots(
     msgs = sim_run_engine.assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == "move_gonio_to_start",
+        and msg.kwargs["group"] == CONST.WAIT.MOVE_GONIO_TO_START,
     )
     msgs = sim_run_engine.assert_message_and_return_remaining(
         msgs,

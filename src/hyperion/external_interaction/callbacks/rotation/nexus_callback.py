@@ -38,6 +38,9 @@ class RotationNexusFileCallback(PlanReactiveCallback):
         self.run_uid: str | None = None
         self.writer: NexusWriter | None = None
         self.descriptors: Dict[str, EventDescriptor] = {}
+        # used when multiple collections are made in one detector arming event:
+        self.full_num_of_images: int | None = None
+        self.meta_data_run_number: int | None = None
 
     def activity_gated_descriptor(self, doc: EventDescriptor):
         self.descriptors[doc["uid"]] = doc
@@ -66,10 +69,13 @@ class RotationNexusFileCallback(PlanReactiveCallback):
             )
             vds_data_type = vds_type_based_on_bit_depth(doc["data"]["eiger_bit_depth"])
             self.writer.create_nexus_file(vds_data_type)
-            NEXUS_LOGGER.info(f"Nexus file created at {self.writer.full_filename}")
+            NEXUS_LOGGER.info(f"Nexus file created at {self.writer.data_filename}")
         return doc
 
     def activity_gated_start(self, doc: RunStart):
+        if doc.get("subplan_name") == CONST.PLAN.ROTATION_MULTI:
+            self.full_num_of_images = doc.get("full_num_of_images")
+            self.meta_data_run_number = doc.get("meta_data_run_number")
         if doc.get("subplan_name") == CONST.PLAN.ROTATION_OUTER:
             self.run_uid = doc.get("uid")
             json_params = doc.get("hyperion_parameters")
@@ -88,5 +94,9 @@ class RotationNexusFileCallback(PlanReactiveCallback):
                 parameters.scan_points,
                 omega_start_deg=parameters.omega_start_deg,
                 chi_start_deg=parameters.chi_start_deg or 0,
-                phi_start_deg=parameters.chi_start_deg or 0,
+                phi_start_deg=parameters.phi_start_deg or 0,
+                vds_start_index=parameters.nexus_vds_start_img,
+                full_num_of_images=self.full_num_of_images,
+                meta_data_run_number=self.meta_data_run_number,
+                rotation_direction=parameters.rotation_direction,
             )

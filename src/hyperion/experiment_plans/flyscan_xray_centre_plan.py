@@ -151,6 +151,7 @@ def flyscan_xray_centre(
         md={
             "subplan_name": CONST.PLAN.GRIDSCAN_OUTER,
             CONST.TRIGGER.ZOCALO: CONST.PLAN.DO_FGS,
+            "zocalo_environment": parameters.zocalo_environment,
             "hyperion_parameters": parameters.json(),
             "activate_callbacks": [
                 "GridscanNexusFileCallback",
@@ -295,7 +296,6 @@ def run_gridscan(
         feature_controlled.fgs_motors,
         fgs_composite.eiger,
         fgs_composite.synchrotron,
-        parameters.zocalo_environment,
         [parameters.scan_points_first_grid, parameters.scan_points_second_grid],
         parameters.scan_indices,
         do_during_run=read_during_collection,
@@ -307,7 +307,6 @@ def kickoff_and_complete_gridscan(
     gridscan: FastGridScanCommon,
     eiger: EigerDetector,
     synchrotron: Synchrotron,
-    zocalo_environment: str,
     scan_points: list[AxesPoints[Axis]],
     scan_start_indices: list[int],
     do_during_run: Callable[[], MsgGenerator] | None = None,
@@ -317,7 +316,6 @@ def kickoff_and_complete_gridscan(
     @bpp.run_decorator(
         md={
             "subplan_name": CONST.PLAN.DO_FGS,
-            "zocalo_environment": zocalo_environment,
             "scan_points": scan_points,
             "scan_start_indices": scan_start_indices,
         }
