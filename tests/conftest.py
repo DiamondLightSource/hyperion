@@ -33,13 +33,15 @@ from dodal.devices.detector.detector_motion import DetectorMotion
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.fast_grid_scan import FastGridScanCommon
 from dodal.devices.flux import Flux
-from dodal.devices.oav.oav_detector import OAVConfigParams
+from dodal.devices.oav.oav_detector import OAV, OAVConfigParams
+from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.robot import BartRobot
 from dodal.devices.s4_slit_gaps import S4SlitGaps
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import Synchrotron, SynchrotronMode
 from dodal.devices.thawer import Thawer
 from dodal.devices.undulator import Undulator
+from dodal.devices.util.test_utils import patch_motor as oa_patch_motor
 from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
@@ -418,6 +420,17 @@ def vfm(RE):
 
 
 @pytest.fixture
+def lower_gonio(RE):
+    lower_gonio = i03.lower_gonio(fake_with_ophyd_sim=True)
+    with (
+        oa_patch_motor(lower_gonio.x),
+        oa_patch_motor(lower_gonio.y),
+        oa_patch_motor(lower_gonio.z),
+    ):
+        yield lower_gonio
+
+
+@pytest.fixture
 def vfm_mirror_voltages():
     voltages = i03.vfm_mirror_voltages(fake_with_ophyd_sim=True)
     voltages.voltage_lookup_table_path = "tests/test_data/test_mirror_focus.json"
@@ -557,9 +570,12 @@ def fake_create_rotation_devices(
     s4_slit_gaps: S4SlitGaps,
     dcm: DCM,
     robot: BartRobot,
+    oav: OAV,
     done_status,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
+    oav.zoom_controller.onst.sim_put("1.0x")  # type: ignore
+    oav.zoom_controller.fvst.sim_put("5.0x")  # type: ignore
 
     return RotationScanComposite(
         attenuator=attenuator,
@@ -575,6 +591,7 @@ def fake_create_rotation_devices(
         s4_slit_gaps=s4_slit_gaps,
         zebra=zebra,
         robot=robot,
+        oav=oav,
     )
 
 
@@ -632,6 +649,11 @@ async def panda():
         }
     )
     return panda
+
+
+@pytest.fixture
+def oav_parameters_for_rotation(test_config_files) -> OAVParameters:
+    return OAVParameters(oav_config_json=test_config_files["oav_config_json"])
 
 
 async def async_status_done():

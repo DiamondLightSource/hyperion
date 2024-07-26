@@ -105,7 +105,7 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
         )
 
     RE(decorated())
-    assert image.save.call_count == 8
+    assert image.save.call_count == 6
 
 
 @patch(
