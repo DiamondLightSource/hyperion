@@ -178,7 +178,9 @@ def test_wait_between_setting_table_and_arming_panda(RE: RunEngine):
     ), patch(
         "hyperion.device_setup_plans.setup_panda.bps.wait",
         MagicMock(side_effect=handle_wait),
-    ), patch("hyperion.device_setup_plans.setup_panda.load_device"), patch(
+    ), patch(
+        "hyperion.device_setup_plans.setup_panda.load_device"
+    ), patch(
         "hyperion.device_setup_plans.setup_panda.bps.abs_set"
     ):
         RE(
@@ -204,15 +206,15 @@ def test_disarm_panda_disables_correct_blocks(sim_run_engine):
     assert num_of_waits == 1
 
 
-def test_set_and_create_panda_directory(tmp_path):
+def test_set_and_create_panda_directory(tmp_path, RE):
     with patch(
         "hyperion.device_setup_plans.setup_panda.os.path.isdir", return_value=False
     ), patch("hyperion.device_setup_plans.setup_panda.os.makedirs") as mock_makedir:
-        set_and_create_panda_directory(Path(tmp_path))
+        RE(set_and_create_panda_directory(Path(tmp_path)))
         mock_makedir.assert_called_once()
 
     with patch(
         "hyperion.device_setup_plans.setup_panda.os.path.isdir", return_value=True
     ), patch("hyperion.device_setup_plans.setup_panda.os.makedirs") as mock_makedir:
-        set_and_create_panda_directory(Path(tmp_path))
+        RE(set_and_create_panda_directory(Path(tmp_path)))
         mock_makedir.assert_not_called()
