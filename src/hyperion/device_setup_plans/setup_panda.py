@@ -204,7 +204,7 @@ def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenera
     yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
 
 
-def set_and_create_panda_directory(panda_directory: Path):
+def set_and_create_panda_directory(panda_directory: Path) -> MsgGenerator:
     """Updates and creates the panda subdirectory which is used by the PandA's PCAP.
     See https://github.com/DiamondLightSource/hyperion/issues/1385 for a better long
     term solution.
@@ -215,4 +215,7 @@ def set_and_create_panda_directory(panda_directory: Path):
         # Assumes we have permissions, which should be true on Hyperion for now
         os.makedirs(panda_directory)
 
-    get_directory_provider().update(directory=panda_directory)
+    async def set_panda_dir():
+        get_directory_provider().update(directory=panda_directory)
+
+    yield from bps.wait_for([set_panda_dir])
