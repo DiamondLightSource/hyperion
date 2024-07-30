@@ -216,6 +216,6 @@ def set_and_create_panda_directory(panda_directory: Path) -> MsgGenerator:
         os.makedirs(panda_directory)
 
     async def set_panda_dir():
-        get_directory_provider().update(directory=panda_directory)
+        await get_directory_provider().update(directory=panda_directory)
 
     yield from bps.wait_for([set_panda_dir])
