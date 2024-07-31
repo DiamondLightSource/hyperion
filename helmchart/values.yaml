@@ -1,0 +1,10 @@
+hyperion:
+  imageRepository: ghcr.io/DiamondLightSource
+  runAsUser: 37500
+  runAsGroup: 37500
+  supplementalGroups: []
+  beamline: i03
+  dev: false
+  logDir: "/dls_sw/i03/logs/bluesky"
+service:
+  type: NodePort

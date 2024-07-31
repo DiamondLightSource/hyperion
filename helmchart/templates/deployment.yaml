@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hyperion-deployment
+spec:
+  selector:
+    matchLabels:
+      app: hyperion
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hyperion
+    spec:
+      securityContext:
+        # gda2
+        runAsUser: {{  .Values.hyperion.runAsUser }}
+        runAsGroup: {{ .Values.hyperion.runAsGroup }}
+        supplementalGroups: {{ .Values.hyperion.supplementalGroups }}
+      volumes:
+        - name: dls-sw-bl
+          hostPath:
+            path: "/dls_sw/{{ .Values.hyperion.beamline }}"
+            type: Directory
+        - name: dls-sw-apps
+          hostPath:
+            path: "/dls_sw/apps"
+            type: Directory
+        - name: dls-sw-dasc
+          hostPath:
+            path: "/dls_sw/dasc"
+            type: Directory
+        {{- if .Values.hyperion.dev }}
+        # Bind some source folders for easier debugging        
+        - name: src
+          hostPath:
+            path: "{{ .Values.hyperion.projectDir }}/src"
+            type: Directory
+        - name: tests
+          hostPath:
+            path: "{{ .Values.hyperion.projectDir }}/tests"
+            type: Directory
+        - name: utility-scripts
+          hostPath:
+            path: "{{ .Values.hyperion.projectDir }}/utility_scripts"
+            type: Directory
+        - name: devlogs
+          hostPath:
+            path: "{{ .Values.hyperion.projectDir }}/tmp"
+            type: Directory
+        {{- end }}
+      containers:
+      - name: hyperion
+        image: {{ .Values.hyperion.imageRepository}}/hyperion:latest
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+        ports:
+          - name: hyperion-api
+            containerPort: 5005
+            protocol: TCP
+        env:
+          - name: HYPERION_LOG_DIR
+            value: {{ .Values.hyperion.logDir }}
+          - name: BEAMLINE
+            value: "{{ .Values.hyperion.beamline }}"
+          {{- if not .Values.hyperion.dev }}
+          - name: ZOCALO_GO_USER
+            value: "gda2"
+          - name: ZOCALO_GO_HOSTNAME
+            value: "{{ .Values.hyperion.beamline }}-control"
+          - name: ZOCALO_CONFIG
+            value: "/dls_sw/apps/zocalo/live/configuration.yaml"
+          - name: ISPYB_CONFIG_PATH
+            value: "/dls_sw/dasc/mariadb/credentials/ispyb-hyperion-{{ .Values.hyperion.beamline }}.cfg"
+        args: [ "--external-callbacks" ]
+          {{- end }}
+        readinessProbe:
+          exec:
+            command: [ "/project/docker/healthcheck.sh" ]
+          periodSeconds: 5
+        volumeMounts:
+          - mountPath: "/dls_sw/{{ .Values.hyperion.beamline }}"
+            name: dls-sw-bl
+            readOnly: true
+            mountPropagation: HostToContainer
+          - mountPath: "/dls_sw/apps"
+            name: dls-sw-apps
+            readOnly: true
+            mountPropagation: HostToContainer
+          - mountPath: "/dls_sw/dasc"
+            name: dls-sw-dasc
+            readOnly: true
+            mountPropagation: HostToContainer
+          {{- if .Values.hyperion.dev }}
+          - mountPath: "/project/src"
+            name: src
+          - mountPath: "/project/tests"
+            name: tests
+          - mountPath: "/project/utility_scripts"
+            name: utility-scripts
+          - mountPath: "/project/tmp"
+            name: devlogs
+          {{ end }}
