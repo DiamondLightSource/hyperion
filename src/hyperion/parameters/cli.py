@@ -2,6 +2,8 @@ import argparse
 
 from pydantic.dataclasses import dataclass
 
+from hyperion._version import version
+
 
 @dataclass
 class HyperionArgs:
@@ -50,6 +52,12 @@ def parse_cli_args() -> HyperionArgs:
         "--external-callbacks",
         action="store_true",
         help="Run the external hyperion-callbacks service and publish events over ZMQ",
+    )
+    parser.add_argument(
+        "--version",
+        help="Print hyperion version string",
+        action="version",
+        version=version
     )
     args = parser.parse_args()
     return HyperionArgs(

@@ -1,0 +1,60 @@
+name: i03-hyperion
+services:
+  hyperion-common:
+    image: localhost/hyperion
+    pull_policy: never
+    expose:
+      - "5005"
+    volumes:
+      - type: bind
+        source: /dls_sw/i03
+        target: /dls_sw/i03
+        read-only: true
+      - type: bind
+        source: /dls_sw/apps
+        target: /dls_sw/apps
+        read-only: true
+      - type: bind
+        source: /dls_sw/dasc
+        target: /dls_sw/dasc
+        read-only: true
+    network_mode: "host"
+    annotations:
+      # Required in order to read config files readable by dls_dasc
+      - run.oci.keep_original_groups=1
+  hyperion:
+    extends:
+      service: hyperion-common
+    volumes:
+      - type: bind
+        source: /dls/i03
+        target: /dls/i03
+      - type: bind
+        source: /dls_sw/i03/logs
+        target: /dls_sw/i03/logs
+    environment:
+      BEAMLINE: i03
+      HYPERION_LOG_DIR: /dls_sw/i03/logs/bluesky
+      ZOCALO_GO_USER: gda2
+      ZOCALO_GO_HOSTNAME: i03-control
+      ZOCALO_CONFIG: /dls_sw/apps/zocalo/live/configuration.yaml
+      ISPYB_CONFIG_PATH: /dls_sw/dasc/mariadb/credentials/ispyb-hyperion-i03.cfg
+    command: [ "--external-callbacks" ]
+  hyperion-dev:
+    extends:
+      service: hyperion-common
+    volumes:
+      # Bind some source folders for easier debugging
+      - type: bind
+        source: ../../src
+        target: /project/src
+      - type: bind
+        source: ../../utility_scripts
+        target: /project/utility_scripts
+      - type: bind
+        source: ../../tests
+        target: /project/tests
+    environment:
+      HYPERION_LOG_DIR: /tmp/dev
+    entrypoint: [ "/bin/bash" ]
+    

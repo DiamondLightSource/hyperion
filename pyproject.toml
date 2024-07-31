@@ -1,6 +1,9 @@
 [build-system]
-requires = ["setuptools<57", "wheel==0.33.1"]
+requires = ["setuptools<57", "wheel==0.33.1", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -23,3 +26,6 @@ lint.select = [
     "W",    # pycodestyle warnings - https://beta.ruff.rs/docs/rules/#warning-w
     "I001", # isort
 ]
+
+[tool.setuptools_scm]
+write_to = "src/hyperion/_version.py"
