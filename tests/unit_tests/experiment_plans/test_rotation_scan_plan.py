@@ -341,14 +341,14 @@ def test_rotation_scan_initialises_detector_distance_shutter_and_tx_fraction(
         msgs,
         lambda msg: msg.command == "set"
         and msg.args[0] == 1
-        and msg.obj.name == "detector_motion_shutter"
+        and msg.obj.name == "detector_motion-shutter"
         and msg.kwargs["group"] == "setup_senv",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.args[0] == test_rotation_params.detector_distance_mm
-        and msg.obj.name == "detector_motion_z"
+        and msg.obj.name == "detector_motion-z"
         and msg.kwargs["group"] == "setup_senv",
     )
     msgs = assert_message_and_return_remaining(
