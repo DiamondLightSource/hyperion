@@ -17,6 +17,9 @@ from hyperion.experiment_plans.pin_tip_centring_plan import (
     PinTipCentringComposite,
     pin_tip_centre_plan,
 )
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import (
@@ -61,21 +64,24 @@ def pin_centre_then_xray_centre_plan(
         pin_tip_detection=composite.pin_tip_detection,
     )
 
-    yield from pin_tip_centre_plan(
-        pin_tip_centring_composite,
-        parameters.tip_offset_um,
-        oav_config_file,
-    )
+    def _pin_centre_then_xray_centre_plan():
+        yield from pin_tip_centre_plan(
+            pin_tip_centring_composite,
+            parameters.tip_offset_um,
+            oav_config_file,
+        )
 
-    grid_detect_params = create_parameters_for_grid_detection(parameters)
+        grid_detect_params = create_parameters_for_grid_detection(parameters)
 
-    oav_params = OAVParameters("xrayCentring", oav_config_file)
+        oav_params = OAVParameters("xrayCentring", oav_config_file)
 
-    yield from detect_grid_and_do_gridscan(
-        composite,
-        grid_detect_params,
-        oav_params,
-    )
+        yield from detect_grid_and_do_gridscan(
+            composite,
+            grid_detect_params,
+            oav_params,
+        )
+
+    yield from ispyb_activation_wrapper(_pin_centre_then_xray_centre_plan(), parameters)
 
 
 def pin_tip_centre_then_xray_centre(
