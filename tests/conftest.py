@@ -604,7 +604,7 @@ def zocalo(done_status):
 
 
 @pytest.fixture
-async def panda():
+async def panda(RE: RunEngine):
     class MockBlock(Device):
         def __init__(
             self, prefix: str, name: str = "", attributes: dict[str, Any] = {}
