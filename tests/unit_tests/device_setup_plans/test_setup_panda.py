@@ -137,7 +137,7 @@ def test_setup_panda_correctly_configures_table(
     expected_seq_rows: list[SeqRow] = [
         SeqRow(1, SeqTrigger.BITA_1, 0, 0, 0, 1, 0),
         SeqRow(
-            1,
+            x_steps,
             SeqTrigger.POSA_GT,
             int(params.x_start * MM_TO_ENCODER_COUNTS),
             PULSE_WIDTH_US,
@@ -146,25 +146,13 @@ def test_setup_panda_correctly_configures_table(
             0,
         ),
     ]
-    if x_steps > 1:
-        expected_seq_rows.append(
-            SeqRow(
-                x_steps - 1,
-                SeqTrigger.IMMEDIATE,
-                0,
-                PULSE_WIDTH_US,
-                1,
-                SPACE_WIDTH_US,
-                0,
-            )
-        )
 
     exposure_distance_counts = exposure_distance_mm * MM_TO_ENCODER_COUNTS
     expected_seq_rows.extend(
         [
             SeqRow(1, SeqTrigger.BITA_1, 0, 0, 0, 1, 0),
             SeqRow(
-                1,
+                x_steps,
                 SeqTrigger.POSA_LT,
                 int(
                     (params.x_start + (params.x_steps - 1) * params.x_step_size)
@@ -178,18 +166,6 @@ def test_setup_panda_correctly_configures_table(
             ),
         ]
     )
-    if x_steps > 1:
-        expected_seq_rows.append(
-            SeqRow(
-                x_steps - 1,
-                SeqTrigger.IMMEDIATE,
-                0,
-                PULSE_WIDTH_US,
-                1,
-                SPACE_WIDTH_US,
-                0,
-            )
-        )
 
     for key in SeqRow._fields:
         np.testing.assert_array_equal(

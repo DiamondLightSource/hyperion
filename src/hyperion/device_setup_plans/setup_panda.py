@@ -46,13 +46,11 @@ def _get_seq_table(
     SEQUENCER TABLE:
 
         1. Wait for physical trigger from motion script to mark start of scan / change of direction
-        2. Wait for POSA (X2) to be greater than X_START and send 1 trigger
-        3. Send out the remaining x_steps - 1 triggers every time_between_steps_ms
-        4. Wait for physical trigger from motion script to mark change of direction
-        5. Wait for POSA (X2) to be less than X_START + X_STEP_SIZE * x_steps + exposure distance, then
-            send 1 trigger
-        6. Send the remaining x_steps - 1 triggers every time_between_steps_ms
-        7. Go back to step one.
+        2. Wait for POSA (X2) to be greater than X_START and send x_steps triggers every time_between_steps_ms
+        3. Wait for physical trigger from motion script to mark change of direction
+        4. Wait for POSA (X2) to be less than X_START + X_STEP_SIZE * x_steps + exposure distance, then
+            send x_steps triggers every time_between_steps_ms
+        5. Go back to step one.
 
         For a more detailed explanation and a diagram, see https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning
 
@@ -92,6 +90,7 @@ def _get_seq_table(
 
     rows.append(
         SeqTableRow(
+            repeats=num_pulses,
             trigger=SeqTrigger.POSA_GT,
             position=start_of_grid_x_counts,
             time1=PULSE_WIDTH_US,
@@ -101,22 +100,12 @@ def _get_seq_table(
         )
     )
 
-    if num_pulses > 1:
-        rows.append(
-            SeqTableRow(
-                repeats=num_pulses - 1,  # account for previous 1 pulse at start
-                time1=PULSE_WIDTH_US,
-                outa1=True,
-                time2=delay_between_pulses - PULSE_WIDTH_US,
-                outa2=False,
-            )
-        )
-
     # -ve direction scan
     rows.append(SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1))
 
     rows.append(
         SeqTableRow(
+            repeats=num_pulses,
             trigger=SeqTrigger.POSA_LT,
             position=end_of_grid_x_counts + exposure_distance_x_counts,
             time1=PULSE_WIDTH_US,
@@ -125,17 +114,6 @@ def _get_seq_table(
             outa2=False,
         )
     )
-
-    if num_pulses > 1:
-        rows.append(
-            SeqTableRow(
-                repeats=num_pulses - 1,  # account for previous 1 pulse at start
-                time1=PULSE_WIDTH_US,
-                outa1=True,
-                time2=delay_between_pulses - PULSE_WIDTH_US,
-                outa2=False,
-            )
-        )
 
     table = seq_table_from_rows(*rows)
 
