@@ -139,7 +139,8 @@ def setup_panda_for_flyscan(
         initial_x (float): Motor positions at time of PandA setup
         exposure_time_s (float): Detector exposure time per trigger
         time_between_x_steps_ms (float): Time, in ms, between each trigger. Equal to deadtime + exposure time
-
+        sample_velocity_mm_per_s (float): Velocity of the sample in mm/s = x_step_size_mm * 1000 /
+            time_between_x_steps_ms
     Returns:
         MsgGenerator
 
