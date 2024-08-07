@@ -14,7 +14,7 @@ for option in "$@"; do
             ;;
         --help|--info|--h)
             CMD=`basename $0`
-            echo "$CMD [options"
+            echo "$CMD [options]"
             echo "Builds and/or pushes the docker container image to the repository"
             echo "  --help                  This help"
             echo "  --no-build              Do not build the image"
@@ -31,6 +31,7 @@ done
 PROJECTDIR=`dirname $0`/..
 VERSION=$1
 if [ -z $VERSION ]; then
+  python -m setuptools_scm --force-write-version-files
   VERSION=`hyperion --version | sed -e 's/[^a-zA-Z0-9._-]/_/g'`
 fi
 PROJECT=hyperion
@@ -49,5 +50,6 @@ if [[ $PUSH == 1 ]]; then
     exit 1
   fi
   echo "Pushing to ghcr.io/$NAMESPACE/$PROJECT:latest ..."
-  podman push $PROJECT:latest ghcr.io/$NAMESPACE/$PROJECT:latest
+  podman push $PROJECT:latest docker://ghcr.io/$NAMESPACE/$PROJECT:latest
+  podman push $PROJECT:latest docker://ghcr.io/$NAMESPACE/$PROJECT:$VERSION
 fi

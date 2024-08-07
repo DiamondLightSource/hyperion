@@ -6,5 +6,8 @@ hyperion:
   beamline: i03
   dev: false
   logDir: "/dls_sw/i03/logs/bluesky"
+  projectDir: "/dls_sw/i03/software/bluesky/hyperion"
+  # This should be overridden at install time
+  appVersion: SET_ON_INSTALL
 service:
   type: NodePort

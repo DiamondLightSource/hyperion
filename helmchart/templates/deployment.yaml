@@ -30,7 +30,6 @@ spec:
           hostPath:
             path: "/dls_sw/dasc"
             type: Directory
-        {{- if .Values.hyperion.dev }}
         # Bind some source folders for easier debugging        
         - name: src
           hostPath:
@@ -44,6 +43,7 @@ spec:
           hostPath:
             path: "{{ .Values.hyperion.projectDir }}/utility_scripts"
             type: Directory
+        {{- if .Values.hyperion.dev }}
         - name: devlogs
           hostPath:
             path: "{{ .Values.hyperion.projectDir }}/tmp"
@@ -51,7 +51,7 @@ spec:
         {{- end }}
       containers:
       - name: hyperion
-        image: {{ .Values.hyperion.imageRepository}}/hyperion:latest
+        image: {{ .Values.hyperion.imageRepository}}/hyperion:{{ .Values.hyperion.appVersion }}
         resources:
           limits:
             cpu: "1"
@@ -93,13 +93,13 @@ spec:
             name: dls-sw-dasc
             readOnly: true
             mountPropagation: HostToContainer
-          {{- if .Values.hyperion.dev }}
           - mountPath: "/project/src"
             name: src
           - mountPath: "/project/tests"
             name: tests
           - mountPath: "/project/utility_scripts"
             name: utility-scripts
+          {{- if .Values.hyperion.dev }}
           - mountPath: "/project/tmp"
             name: devlogs
           {{ end }}
