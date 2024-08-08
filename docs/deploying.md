@@ -59,14 +59,11 @@ Once the docker image is built, the image can be deployed to kubernetes using th
 
 ### Production deployment
 
-* Check out the repo to a new folder
+* From a development hyperion workspace
 ```commandline
-cd /dls_sw/<beamline>/software/bluesky
-git clone git@github.com:DiamondLightSource/hyperion.git hyperion_vX.Y.Z
-``` 
-* Recreate the `hyperion` symlink to point to the new folder
-* ssh to the beamline control machine
-* change user to the service account user
+python utility_scripts/deploy/deploy_hyperion.py --kubernetes <beamline>
+```
+
 * cd to the new folder and run
 ```commandline
 git checkout vX.Y.Z
