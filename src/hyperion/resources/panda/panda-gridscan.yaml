@@ -42,7 +42,7 @@
   pulse.4.delay_units: s
   pulse.4.step_units: s
   pulse.4.width_units: s
-  seq.1.prescale_units: s
+  seq.1.prescale_units: us
   seq.2.prescale_units: s
   sfp3_sync_in.pos1_units: ''
   sfp3_sync_in.pos2_units: ''
@@ -211,13 +211,6 @@
   counter.8.step: 0.0
   counter.8.trig: ZERO
   counter.8.trig_delay: 0
-  data.capture: false
-  data.capture_mode: FIRST_N
-  data.createdirectory: 0
-  data.flush_period: 1.0
-  data.hdf_directory: ''
-  data.hdf_file_name: ''
-  data.num_capture: 0
   div.1.divisor: 0.0
   div.1.enable: ZERO
   div.1.enable_delay: 0
@@ -308,7 +301,7 @@
   inenc.2.protocol: Quadrature
   inenc.2.rst_on_z: '0'
   inenc.2.setp: 0
-  inenc.2.val_capture: 'No'
+  inenc.2.val_capture: Min Max Mean
   inenc.2.val_dataset: ''
   inenc.2.val_offset: 0.0
   inenc.2.val_scale: 5.0e-06
@@ -324,7 +317,7 @@
   inenc.3.protocol: Quadrature
   inenc.3.rst_on_z: '0'
   inenc.3.setp: 0
-  inenc.3.val_capture: 'No'
+  inenc.3.val_capture: Min Max Mean
   inenc.3.val_dataset: ''
   inenc.3.val_offset: 0.0
   inenc.3.val_scale: 5.0e-06
@@ -676,7 +669,7 @@
   seq.1.posa: INENC1.VAL
   seq.1.posb: ZERO
   seq.1.posc: ZERO
-  seq.1.prescale: 0.0
+  seq.1.prescale: 1.0
   seq.1.repeats: 0.0
   seq.1.table:
     outa1: [0, 1, 0, 0, 1, 0]

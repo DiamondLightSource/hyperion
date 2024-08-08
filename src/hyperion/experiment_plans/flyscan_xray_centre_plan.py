@@ -467,6 +467,7 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
     yield from disarm_panda_for_gridscan(fgs_composite.panda, group)
     yield from _generic_tidy(fgs_composite, group, False)
     yield from bps.wait(group, timeout=10)
+    yield from bps.unstage(fgs_composite.panda)
 
 
 def _zebra_triggering_setup(
@@ -522,6 +523,8 @@ def _panda_triggering_setup(
     panda_directory = Path(parameters.storage_directory, "panda")
 
     yield from set_and_create_panda_directory(panda_directory)
+
+    yield from bps.stage(fgs_composite.panda)
 
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,

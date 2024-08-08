@@ -41,7 +41,7 @@ def setup_oav_snapshot_plan(
     )
     yield from bps.abs_set(
         composite.aperture_scatterguard,
-        AperturePositions.ROBOT_LOAD,
+        composite.aperture_scatterguard.aperture_positions.ROBOT_LOAD,
         group=OAV_SNAPSHOT_SETUP_GROUP,
     )
 
