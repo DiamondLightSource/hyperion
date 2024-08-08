@@ -151,6 +151,8 @@ def setup_panda_for_flyscan(
     assert time_between_x_steps_ms * 1000 >= exposure_time_s
     assert sample_velocity_mm_per_s * exposure_time_s < parameters.x_step_size
 
+    yield from bps.stage(panda, group="panda-config")
+
     with resources.as_file(
         resources.files(hyperion.resources.panda) / "panda-gridscan.yaml"
     ) as config_yaml_path:

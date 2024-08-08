@@ -524,8 +524,6 @@ def _panda_triggering_setup(
 
     yield from set_and_create_panda_directory(panda_directory)
 
-    yield from bps.stage(fgs_composite.panda)
-
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
         parameters.panda_FGS_params,
