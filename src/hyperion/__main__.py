@@ -228,7 +228,7 @@ def compose_start_args(context: BlueskyContext, plan_name: str, action: Actions)
         parameters = experiment_internal_param_type(**json.loads(request.data))
     except Exception as e:
         raise ValueError(
-            "Supplied parameters don't match the plan for this endpoint"
+            f"Supplied parameters don't match the plan for this endpoint {request.data}"
         ) from e
     return plan, parameters, plan_name, callback_type
 

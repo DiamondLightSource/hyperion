@@ -516,9 +516,9 @@ def test_log_on_invalid_json_params(test_env: ClientAndRunEngine):
     response = test_env.client.put(TEST_BAD_PARAM_ENDPOINT, data='{"bad":1}').json
     assert isinstance(response, dict)
     assert response.get("status") == Status.FAILED.value
-    assert (
-        response.get("message")
-        == 'ValueError("Supplied parameters don\'t match the plan for this endpoint")'
+    assert (message := response.get("message")) is not None
+    assert message.startswith(
+        "ValueError('Supplied parameters don\\'t match the plan for this endpoint"
     )
     assert response.get("exception_type") == "ValueError"
 

@@ -9,6 +9,7 @@ from typing import Any, Generator, Sequence
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
+import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator
@@ -53,6 +54,7 @@ from ophyd_async.core import Device, DeviceVector, callback_on_mock_put, set_moc
 from ophyd_async.core.async_status import AsyncStatus
 from ophyd_async.epics.motion.motor import Motor
 from ophyd_async.epics.signal import epics_signal_rw
+from ophyd_async.panda._common_blocks import DatasetTable
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
@@ -648,6 +650,11 @@ async def panda(RE: RunEngine):
             **{panda.pulse[i]: {"enable": str} for i in panda.pulse.keys()},
         }
     )
+
+    set_mock_value(
+        panda.data.datasets, DatasetTable(name=np.array(["name"]), hdf5_type=[])
+    )
+
     return panda
 
 
