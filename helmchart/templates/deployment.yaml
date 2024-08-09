@@ -78,7 +78,7 @@ spec:
           {{- end }}
         readinessProbe:
           exec:
-            command: [ "/project/docker/healthcheck.sh" ]
+            command: [ "/project/utility_scripts/docker/healthcheck.sh" ]
           periodSeconds: 5
         volumeMounts:
           - mountPath: "/dls_sw/{{ .Values.hyperion.beamline }}"
