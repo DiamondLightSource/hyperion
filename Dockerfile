@@ -1,9 +1,15 @@
 FROM python:3.11 AS build
-ADD . /project/
-WORKDIR "/project"
+ADD . /app/hyperion
+WORKDIR "/app/hyperion"
 RUN pip install -e .[dev]
-RUN python -m build
 
-ENTRYPOINT /project/utility_scripts/docker/entrypoint.sh
+# Check out and install dodal locally with no dependencies as this may be a different version to what
+# is referred to in the setup.cfg, but we don't care as it will be overridden by bind mounts in the
+# running container
+RUN mkdir ../dodal && \
+git clone https://github.com/DiamondLightSource/dodal.git ../dodal && \
+pip install --no-deps -e ../dodal
+
+ENTRYPOINT /app/hyperion/utility_scripts/docker/entrypoint.sh
 
 EXPOSE 5005

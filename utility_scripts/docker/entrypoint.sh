@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 # Entry point for the production docker image that launches the external callbacks
 # as well as the main server
 
@@ -28,6 +28,13 @@ for option in "$@"; do
             ;;
     esac
 done
+
+kill_active_apps () {
+    echo "Killing active instances of hyperion and hyperion-callbacks..."
+    pkill -e -f "python.*hyperion"
+    pkill -e -f "SCREEN.*hyperion"
+    echo "done."
+}
 
 RELATIVE_SCRIPT_DIR=$( dirname -- "$0"; )
 cd ${RELATIVE_SCRIPT_DIR}
@@ -63,6 +70,8 @@ do
         cb_commands+="${h_and_cb_arg_strings[$i]} ";
     fi;
 done
+
+trap kill_active_apps TERM 
 
 if [ "$EXTERNAL_CALLBACK_SERVICE" = true ]; then
     hyperion-callbacks `echo $cb_commands;`>$callback_start_log_path 2>&1 &

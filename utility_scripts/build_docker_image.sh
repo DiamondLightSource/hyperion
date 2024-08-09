@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # builds the docker image
 BUILD=1
 PUSH=1

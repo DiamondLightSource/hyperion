@@ -43,6 +43,10 @@ spec:
           hostPath:
             path: "{{ .Values.hyperion.projectDir }}/utility_scripts"
             type: Directory
+        - name: dodal
+          hostPath:
+            path: "{{ .Values.dodal.projectDir | clean }}"
+            type: Directory
         {{- if .Values.hyperion.dev }}
         - name: devlogs
           hostPath:
@@ -78,7 +82,7 @@ spec:
           {{- end }}
         readinessProbe:
           exec:
-            command: [ "/project/docker/healthcheck.sh" ]
+            command: [ "/app/hyperion/utility_scripts/docker/healthcheck.sh" ]
           periodSeconds: 5
         volumeMounts:
           - mountPath: "/dls_sw/{{ .Values.hyperion.beamline }}"
@@ -93,13 +97,15 @@ spec:
             name: dls-sw-dasc
             readOnly: true
             mountPropagation: HostToContainer
-          - mountPath: "/project/src"
+          - mountPath: "/app/hyperion/src"
             name: src
-          - mountPath: "/project/tests"
+          - mountPath: "/app/hyperion/tests"
             name: tests
-          - mountPath: "/project/utility_scripts"
+          - mountPath: "/app/hyperion/utility_scripts"
             name: utility-scripts
+          - mountPath: "/app/dodal"
+            name: dodal
           {{- if .Values.hyperion.dev }}
-          - mountPath: "/project/tmp"
+          - mountPath: "/app/hyperion/tmp"
             name: devlogs
           {{ end }}

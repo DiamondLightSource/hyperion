@@ -62,26 +62,28 @@ Once the docker image is built, the image can be deployed to kubernetes using th
 * From a development hyperion workspace
 ```commandline
 python utility_scripts/deploy/deploy_hyperion.py --kubernetes <beamline>
+cd <path to deployed hyperion folder in /dls_sw>
+./utility_scripts/deploy/deploy_to_k8s.sh --beamline=<beamline> hyperion
 ```
 
-* cd to the new folder and run
-```commandline
-git checkout vX.Y.Z
-./utility_scripts/deploy/deploy_to_k8s.sh hyperion
-```
-
-This will create a helm release "hyperion".
+This will create a helm release "hyperion". The source folders will be mounted as 
+bind mounts to allow the pod to pick up changes in production. For production these are expected to be in the normal 
+place defined in `values.yaml`.
 
 ### development deployment
 
-From your development workspace, either with a release image or using a development image built with :
+
+From a development `hyperion` workspace, either with a release image or using a development image built with the script 
+above, you install a dev deployment to the cluster you are currently logged into with `kubectl`:
 
 ```commandline
 ./utility_scripts/deploy/deploy_to_k8s.sh --dev --beamline=<beamline> --repository=<your image repo> hyperion-test
 ```
 
-Please note, the deployment is intended to be run from a checked-out matching version of the git repository. For 
-production this is expected to be in the normal place defined in `values.yaml`. The source folders will be mounted as 
-bind mounts to allow the pod to pick up changes in production.
+The dev deployment bind-mounts the current `hyperion` workspace and `../dodal` into the container so that you can 
+run against your own development code. **Clusters do not allow bind mounts from arbitrary directories so 
+your workspace will have to be in a permitted directory such as your home directory.**
+
+Please note, the deployment script is intended to be run from a checked-out matching version of the git repository.
 
 `helm list` should then show details of the installed release 
