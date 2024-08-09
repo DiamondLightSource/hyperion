@@ -275,9 +275,7 @@ class StopOrStatus(Resource):
         action = kwargs.get("action")
         status_and_message = StatusAndMessage(Status.FAILED, f"{action} not understood")
         if action == Actions.STATUS.value:
-            LOGGER.debug(
-                f"Runner recieved status request - state of the runner object is: {self.runner.__dict__} - state of the RE is: {self.runner.RE.__dict__}"
-            )
+            LOGGER.debug("Runner recieved status request")
             status_and_message = self.runner.current_status
         return asdict(status_and_message)
 

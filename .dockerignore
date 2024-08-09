@@ -1,0 +1,10 @@
+# List of folders and files to be excluded from the docker image
+.github
+.pytest_cache
+.ruff_cache
+
+# virtualenv stuff - this gets built by the docker script
+.venv
+activate
+
+tmp
