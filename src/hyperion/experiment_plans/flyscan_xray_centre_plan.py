@@ -56,7 +56,7 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
 )
 from hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
-    set_and_create_panda_directory,
+    set_panda_directory,
     setup_panda_for_flyscan,
 )
 from hyperion.device_setup_plans.setup_zebra import (
@@ -521,8 +521,7 @@ def _panda_triggering_setup(
     )
 
     directory_provider_root = Path(parameters.storage_directory)
-
-    yield from set_and_create_panda_directory(directory_provider_root)
+    yield from set_panda_directory(directory_provider_root)
 
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,

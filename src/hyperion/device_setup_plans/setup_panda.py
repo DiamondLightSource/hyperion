@@ -1,4 +1,4 @@
-import os
+from datetime import datetime
 from enum import Enum
 from importlib import resources
 from pathlib import Path
@@ -209,18 +209,12 @@ def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenera
     yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
 
 
-def set_and_create_panda_directory(panda_directory: Path) -> MsgGenerator:
-    """Updates and creates the panda subdirectory which is used by the PandA's PCAP.
-    See https://github.com/DiamondLightSource/hyperion/issues/1385 for a better long
-    term solution.
-    """
+def set_panda_directory(panda_directory: Path) -> MsgGenerator:
+    """Updates the root folder which is used by the PandA's PCAP."""
 
-    if not os.path.isdir(panda_directory):
-        LOGGER.debug(f"Creating PandA PCAP subdirectory at {panda_directory}")
-        # Assumes we have permissions, which should be true on Hyperion for now
-        os.makedirs(panda_directory)
+    suffix = datetime.now().strftime("_%Y%m%d%H%M%S")
 
     async def set_panda_dir():
-        await get_directory_provider().update(directory=panda_directory)
+        await get_directory_provider().update(directory=panda_directory, suffix=suffix)
 
     yield from bps.wait_for([set_panda_dir])
