@@ -520,9 +520,9 @@ def _panda_triggering_setup(
         time_between_x_steps_ms,
     )
 
-    panda_directory = Path(parameters.storage_directory, "panda")
+    directory_provider_root = Path(parameters.storage_directory)
 
-    yield from set_and_create_panda_directory(panda_directory)
+    yield from set_and_create_panda_directory(directory_provider_root)
 
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
