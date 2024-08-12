@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
-from bluesky.simulators import RunEngineSimulator
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.types import UpdatingDirectoryProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from ophyd_async.panda import SeqTrigger
@@ -124,6 +124,13 @@ def test_setup_panda_correctly_configures_table(
     msgs = [
         msg for msg in msgs if not msg.kwargs.get("group", "").startswith("load-phase")
     ]
+
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "panda-pulse-1-width"
+        and msg.args[0] == exposure_time_s,
+    )
 
     table_msg = [
         msg

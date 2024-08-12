@@ -21,7 +21,6 @@ from hyperion.log import LOGGER
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
-DETECTOR_TRIGGER_WIDTH = 1e-4
 TICKS_PER_MS = 1000  # Panda sequencer prescaler will be set to us
 
 
@@ -165,9 +164,7 @@ def setup_panda_for_flyscan(
         wait=True,
     )
 
-    yield from bps.abs_set(
-        panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
-    )
+    yield from bps.abs_set(panda.pulse[1].width, exposure_time_s, group="panda-config")
 
     exposure_distance_mm = sample_velocity_mm_per_s * exposure_time_s
 
