@@ -149,10 +149,11 @@ def prepare_for_robot_load(composite: RobotLoadThenCentreComposite):
     yield from bps.wait("prepare_robot_load")
 
 
-def robot_load_and_energy_change(
+def do_robot_load(
     composite: RobotLoadThenCentreComposite,
     sample_location: SampleLocation,
     demand_energy_ev: float | None,
+    thawing_time: float,
 ):
     yield from bps.abs_set(
         composite.robot,
@@ -167,6 +168,9 @@ def robot_load_and_energy_change(
         )
 
     yield from bps.wait("robot_load")
+
+    yield from bps.abs_set(composite.thawer.thaw_for_time_s, thawing_time)
+    yield from wait_for_smargon_not_disabled(composite.smargon)
 
 
 def raise_exception_if_moved_out_of_cryojet(exception):
@@ -204,10 +208,11 @@ def robot_load_then_centre_plan(
         assert params.sample_puck is not None
         assert params.sample_pin is not None
 
-        robot_load_plan = robot_load_and_energy_change(
+        robot_load_plan = do_robot_load(
             composite,
             SampleLocation(params.sample_puck, params.sample_pin),
             params.demand_energy_ev,
+            params.thawing_time,
         )
 
         # The lower gonio must be in the correct position for the robot load and we
@@ -225,9 +230,6 @@ def robot_load_then_centre_plan(
             ),
             except_plan=raise_exception_if_moved_out_of_cryojet,
         )
-
-        yield from bps.abs_set(composite.thawer.thaw_for_time_s, params.thawing_time)
-        yield from wait_for_smargon_not_disabled(composite.smargon)
 
         yield from take_robot_snapshots(
             composite.oav, composite.webcam, params.snapshot_directory
