@@ -51,9 +51,7 @@ class GridCommon(
 
     @property
     def ispyb_params(self):
-        return GridscanIspybParams(
-            visit_path=str(self.visit_directory),
-        )
+        return GridscanIspybParams()
 
     @property
     def detector_params(self):

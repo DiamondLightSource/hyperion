@@ -189,7 +189,7 @@ def robot_load_then_centre_plan(
         md={
             "subplan_name": CONST.PLAN.ROBOT_LOAD,
             "metadata": {
-                "visit_path": params.ispyb_params.visit_path,
+                "visit_path": str(params.visit_directory),
                 "sample_id": params.sample_id,
                 "sample_puck": params.sample_puck,
                 "sample_pin": params.sample_pin,
