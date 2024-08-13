@@ -226,7 +226,11 @@ def robot_load_then_centre_plan(
             except_plan=raise_exception_if_moved_out_of_cryojet,
         )
 
-        yield from bps.abs_set(composite.thawer.thaw_for_time_s, params.thawing_time)
+        yield from bps.abs_set(
+            composite.thawer.thaw_for_time_s,
+            params.thawing_time,
+            group="thawing_finished",
+        )
         yield from wait_for_smargon_not_disabled(composite.smargon)
 
         yield from take_robot_snapshots(
