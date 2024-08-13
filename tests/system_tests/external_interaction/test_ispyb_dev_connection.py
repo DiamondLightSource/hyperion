@@ -41,9 +41,9 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
 )
 from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGridInfo,
+    Orientation,
     ScanDataInfo,
 )
-from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,

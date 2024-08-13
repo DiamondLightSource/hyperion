@@ -8,9 +8,9 @@ from hyperion.external_interaction.ispyb.data_model import (
     DataCollectionGroupInfo,
     DataCollectionInfo,
     DataCollectionPositionInfo,
+    Orientation,
     ScanDataInfo,
 )
-from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
 from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,

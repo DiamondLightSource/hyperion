@@ -5,8 +5,10 @@ import pytest
 from hyperion.external_interaction.callbacks.xray_centre.ispyb_mapping import (
     construct_comment_for_gridscan,
 )
-from hyperion.external_interaction.ispyb.data_model import DataCollectionGridInfo
-from hyperion.external_interaction.ispyb.ispyb_dataclass import Orientation
+from hyperion.external_interaction.ispyb.data_model import (
+    DataCollectionGridInfo,
+    Orientation,
+)
 from hyperion.parameters.gridscan import ThreeDGridScan
 
 from ...conftest import (
@@ -28,25 +30,22 @@ def test_ispyb_deposition_rounds_position_to_int(
     mock_ispyb_conn: MagicMock,
     dummy_params,
 ):
-    assert (
-        construct_comment_for_gridscan(
-            DataCollectionGridInfo(
-                0.1,
-                0.1,
-                40,
-                20,
-                1.25,
-                1.25,
-                0.01,  # type: ignore
-                100,
-                Orientation.HORIZONTAL,
-                True,  # type: ignore
-            ),
-        )
-        == (
-            "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
-            "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [3200,1700]."
-        )
+    assert construct_comment_for_gridscan(
+        DataCollectionGridInfo(
+            0.1,
+            0.1,
+            40,
+            20,
+            1.25,
+            1.25,
+            0.01,  # type: ignore
+            100,
+            Orientation.HORIZONTAL,
+            True,  # type: ignore
+        ),
+    ) == (
+        "Hyperion: Xray centring - Diffraction grid scan of 40 by 20 images "
+        "in 100.0 um by 100.0 um steps. Top left (px): [0,100], bottom right (px): [3200,1700]."
     )
 
 
