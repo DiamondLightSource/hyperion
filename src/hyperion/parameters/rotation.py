@@ -79,13 +79,11 @@ class RotationScan(
     def ispyb_params(self):  # pyright: ignore
         return RotationIspybParams(
             visit_path=str(self.visit_directory),
-            comment=self.comment,
             xtal_snapshots_omega_start=(
                 self.ispyb_extras.xtal_snapshots_omega_start
                 if self.ispyb_extras
                 else []
             ),
-            ispyb_experiment_type=self.ispyb_experiment_type,
         )
 
     @property

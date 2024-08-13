@@ -53,10 +53,6 @@ class GridCommon(
     def ispyb_params(self):
         return GridscanIspybParams(
             visit_path=str(self.visit_directory),
-            comment=self.comment,
-            sample_id=self.sample_id,
-            ispyb_experiment_type=self.ispyb_experiment_type,
-            position=None,
         )
 
     @property

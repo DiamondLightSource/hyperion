@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from hyperion.external_interaction.ispyb.data_model import DataCollectionInfo
+from hyperion.external_interaction.ispyb.ispyb_dataclass import (
+    IspybParams,
+)
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.rotation import RotationScan
 
@@ -24,7 +27,7 @@ def populate_data_collection_info_for_rotation(params: RotationScan):
     return info
 
 
-def get_xtal_snapshots(ispyb_params):
+def get_xtal_snapshots(ispyb_params: IspybParams):
     if ispyb_params.xtal_snapshots_omega_start:
         xtal_snapshots = ispyb_params.xtal_snapshots_omega_start[:4]
         ISPYB_LOGGER.info(
