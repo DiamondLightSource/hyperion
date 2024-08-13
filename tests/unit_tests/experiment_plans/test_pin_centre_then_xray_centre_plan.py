@@ -135,7 +135,7 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
     assert messages[0].args[0] == 100
     assert messages[0].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
     assert messages[1].obj is simple_beamline.detector_motion.shutter
-    assert messages[1].args[0] == 1
+    assert messages[1].args[0] == ShutterState.OPEN
     assert messages[1].kwargs["group"] == CONST.WAIT.GRID_READY_FOR_DC
     messages = assert_message_and_return_remaining(
         messages[2:],

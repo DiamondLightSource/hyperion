@@ -13,4 +13,4 @@ def set_detector_z_position(
 
 def set_shutter(detector_motion: DetectorMotion, state: ShutterState, group=None):
     LOGGER.info(f"Setting shutter to {state} ({group})")
-    yield from bps.abs_set(detector_motion.shutter, int(state), group=group)
+    yield from bps.abs_set(detector_motion.shutter, state, group=group)

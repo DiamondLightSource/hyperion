@@ -312,7 +312,7 @@ def fast_grid_scan():
 
 
 @pytest.fixture
-def detector_motion():
+def detector_motion(RE):
     det = i03.detector_motion(fake_with_ophyd_sim=True)
     with patch_async_motor(det.z):
         yield det
