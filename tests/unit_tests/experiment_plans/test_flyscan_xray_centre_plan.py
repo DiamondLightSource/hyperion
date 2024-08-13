@@ -1,5 +1,6 @@
 import random
 import types
+from pathlib import Path
 from typing import Tuple
 from unittest.mock import DEFAULT, MagicMock, call, patch
 
@@ -894,8 +895,8 @@ class TestFlyscanXrayCentrePlan:
         mock_parent.assert_has_calls([call.disarm(), call.run_end(0), call.run_end(0)])
 
     @patch(
-        "hyperion.experiment_plans.flyscan_xray_centre_plan.set_and_create_panda_directory",
-        new=MagicMock(side_effect=_custom_msg("set_panda_directory")),
+        "hyperion.experiment_plans.flyscan_xray_centre_plan.set_panda_directory",
+        side_effect=_custom_msg("set_panda_directory"),
     )
     @patch(
         "hyperion.device_setup_plans.setup_panda.arm_panda_for_gridscan",
@@ -911,6 +912,7 @@ class TestFlyscanXrayCentrePlan:
     )
     def test_flyscan_xray_centre_sets_directory_stages_arms_disarms_unstages_the_panda(
         self,
+        mock_set_panda_directory: MagicMock,
         done_status: Status,
         fgs_composite_with_panda_pcap: FlyScanXRayCentreComposite,
         fgs_params_use_panda: ThreeDGridScan,
@@ -923,6 +925,10 @@ class TestFlyscanXrayCentrePlan:
 
         msgs = sim_run_engine.simulate_plan(
             flyscan_xray_centre(fgs_composite_with_panda_pcap, fgs_params_use_panda)
+        )
+
+        mock_set_panda_directory.assert_called_with(
+            Path("/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456")
         )
 
         msgs = assert_message_and_return_remaining(

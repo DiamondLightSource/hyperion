@@ -1,4 +1,4 @@
-import os
+from datetime import datetime
 from enum import Enum
 from importlib import resources
 from pathlib import Path
@@ -21,7 +21,6 @@ from hyperion.log import LOGGER
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
-DETECTOR_TRIGGER_WIDTH = 1e-4
 TICKS_PER_MS = 1000  # Panda sequencer prescaler will be set to us
 
 
@@ -165,9 +164,7 @@ def setup_panda_for_flyscan(
         wait=True,
     )
 
-    yield from bps.abs_set(
-        panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
-    )
+    yield from bps.abs_set(panda.pulse[1].width, exposure_time_s, group="panda-config")
 
     exposure_distance_mm = sample_velocity_mm_per_s * exposure_time_s
 
@@ -209,18 +206,12 @@ def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenera
     yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
 
 
-def set_and_create_panda_directory(panda_directory: Path) -> MsgGenerator:
-    """Updates and creates the panda subdirectory which is used by the PandA's PCAP.
-    See https://github.com/DiamondLightSource/hyperion/issues/1385 for a better long
-    term solution.
-    """
+def set_panda_directory(panda_directory: Path) -> MsgGenerator:
+    """Updates the root folder which is used by the PandA's PCAP."""
 
-    if not os.path.isdir(panda_directory):
-        LOGGER.debug(f"Creating PandA PCAP subdirectory at {panda_directory}")
-        # Assumes we have permissions, which should be true on Hyperion for now
-        os.makedirs(panda_directory)
+    suffix = datetime.now().strftime("_%Y%m%d%H%M%S")
 
     async def set_panda_dir():
-        await get_directory_provider().update(directory=panda_directory)
+        await get_directory_provider().update(directory=panda_directory, suffix=suffix)
 
     yield from bps.wait_for([set_panda_dir])

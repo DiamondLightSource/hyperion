@@ -1,4 +1,4 @@
-from pathlib import Path
+from datetime import datetime
 from typing import NamedTuple
 from unittest.mock import MagicMock, patch
 
@@ -6,14 +6,15 @@ import numpy as np
 import pytest
 from bluesky.plan_stubs import null
 from bluesky.run_engine import RunEngine
-from bluesky.simulators import RunEngineSimulator
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.common.types import UpdatingDirectoryProvider
 from dodal.devices.fast_grid_scan import PandAGridScanParams
 from ophyd_async.panda import SeqTrigger
 
 from hyperion.device_setup_plans.setup_panda import (
     MM_TO_ENCODER_COUNTS,
     disarm_panda_for_gridscan,
-    set_and_create_panda_directory,
+    set_panda_directory,
     setup_panda_for_flyscan,
 )
 
@@ -124,6 +125,13 @@ def test_setup_panda_correctly_configures_table(
         msg for msg in msgs if not msg.kwargs.get("group", "").startswith("load-phase")
     ]
 
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "set"
+        and msg.obj.name == "panda-pulse-1-width"
+        and msg.args[0] == exposure_time_s,
+    )
+
     table_msg = [
         msg
         for msg in msgs
@@ -220,15 +228,18 @@ def test_disarm_panda_disables_correct_blocks(sim_run_engine):
     assert num_of_waits == 1
 
 
-def test_set_and_create_panda_directory(tmp_path, RE):
-    with patch(
-        "hyperion.device_setup_plans.setup_panda.os.path.isdir", return_value=False
-    ), patch("hyperion.device_setup_plans.setup_panda.os.makedirs") as mock_makedir:
-        RE(set_and_create_panda_directory(Path(tmp_path)))
-        mock_makedir.assert_called_once()
+@patch("hyperion.device_setup_plans.setup_panda.get_directory_provider")
+@patch("hyperion.device_setup_plans.setup_panda.datetime", spec=datetime)
+def test_set_panda_directory(
+    mock_datetime, mock_get_directory_provider: MagicMock, tmp_path, RE
+):
+    mock_directory_provider = MagicMock(spec=UpdatingDirectoryProvider)
+    mock_datetime.now = MagicMock(
+        return_value=datetime.fromisoformat("2024-08-11T15:59:23")
+    )
+    mock_get_directory_provider.return_value = mock_directory_provider
 
-    with patch(
-        "hyperion.device_setup_plans.setup_panda.os.path.isdir", return_value=True
-    ), patch("hyperion.device_setup_plans.setup_panda.os.makedirs") as mock_makedir:
-        RE(set_and_create_panda_directory(Path(tmp_path)))
-        mock_makedir.assert_not_called()
+    RE(set_panda_directory(tmp_path))
+    mock_directory_provider.update.assert_called_with(
+        directory=tmp_path, suffix="_20240811155923"
+    )
