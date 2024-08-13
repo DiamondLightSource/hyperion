@@ -16,15 +16,11 @@ LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
 
 
 def begin_sample_environment_setup(
-    detector_motion: DetectorMotion,
     attenuator: Attenuator,
     transmission_fraction: float,
-    detector_distance: float,
     group="setup_senv",
 ):
     """Start all sample environment changes that can be initiated before OAV snapshots are taken"""
-    yield from bps.abs_set(detector_motion.shutter, 1, group=group)
-    yield from bps.abs_set(detector_motion.z, detector_distance, group=group)
     yield from bps.abs_set(attenuator, transmission_fraction, group=group)
 
 

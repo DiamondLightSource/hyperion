@@ -37,8 +37,8 @@ class PlanNameConstants:
 @dataclass(frozen=True)
 class PlanGroupCheckpointConstants:
     # For places to synchronise / stop and wait in plans, use as bluesky group names
-    # Gridscan
-    GRID_READY_FOR_DC = "ready_for_data_collection"
+    GRID_READY_FOR_DC = "grid_ready_for_data_collection"
+    ROTATION_READY_FOR_DC = "rotation_ready_for_data_collection"
 
 
 @dataclass(frozen=True)

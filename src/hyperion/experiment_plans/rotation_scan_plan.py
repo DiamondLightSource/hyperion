@@ -40,6 +40,9 @@ from hyperion.device_setup_plans.setup_zebra import (
     make_trigger_safe,
     setup_zebra_for_rotation,
 )
+from hyperion.device_setup_plans.utils import (
+    start_preparing_data_collection_then_do_plan,
+)
 from hyperion.experiment_plans.oav_snapshot_plan import (
     OavSnapshotComposite,
     oav_snapshot_plan,
@@ -199,8 +202,7 @@ def rotation_scan_plan(
         yield from bps.abs_set(
             axis,
             motion_values.start_motion_deg,
-            group="move_to_rotation_start",
-            wait=True,
+            group=CONST.WAIT.ROTATION_READY_FOR_DC,
         )
 
         yield from setup_zebra_for_rotation(
@@ -211,19 +213,18 @@ def rotation_scan_plan(
             shutter_opening_deg=motion_values.shutter_opening_deg,
             shutter_opening_s=motion_values.shutter_time_s,
             group="setup_zebra",
-            wait=True,
         )
 
         yield from setup_sample_environment(
             composite.aperture_scatterguard,
             params.selected_aperture,
             composite.backlight,
+            group=CONST.WAIT.ROTATION_READY_FOR_DC,
         )
 
         LOGGER.info("Wait for any previous moves...")
         # wait for all the setup tasks at once
-        yield from bps.wait("setup_senv")
-        yield from bps.wait("move_to_rotation_start")
+        yield from bps.wait(CONST.WAIT.ROTATION_READY_FOR_DC)
 
         # get some information for the ispyb deposition and trigger the callback
         yield from read_hardware_for_zocalo(composite.eiger)
@@ -312,16 +313,14 @@ def rotation_scan(
         eiger: EigerDetector = composite.eiger
         eiger.set_detector_parameters(params.detector_params)
 
-        @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: cleanup_plan(composite, max_vel))
         def rotation_with_cleanup_and_stage(params: RotationScan):
             assert composite.aperture_scatterguard.aperture_positions is not None
             LOGGER.info("setting up sample environment...")
             yield from begin_sample_environment_setup(
-                composite.detector_motion,
                 composite.attenuator,
                 params.transmission_frac,
-                params.detector_params.detector_distance,
+                group=CONST.WAIT.ROTATION_READY_FOR_DC,
             )
             LOGGER.info("moving to position (if specified)")
             yield from move_x_y_z(
@@ -348,6 +347,13 @@ def rotation_scan(
             yield from rotation_scan_plan(composite, params, motion_values)
 
         LOGGER.info("setting up and staging eiger...")
-        yield from rotation_with_cleanup_and_stage(params)
+        yield from start_preparing_data_collection_then_do_plan(
+            eiger,
+            composite.detector_motion,
+            params.detector_distance_mm,
+            rotation_with_cleanup_and_stage(params),
+            group=CONST.WAIT.ROTATION_READY_FOR_DC,
+        )
+        yield from bps.unstage(eiger)
 
     yield from rotation_scan_plan_with_stage_and_cleanup(parameters)
