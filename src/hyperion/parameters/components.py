@@ -44,7 +44,7 @@ class ParameterVersion(Version):
         field_schema.update(examples=["1.0.2", "2.15.3-alpha", "21.3.15-beta+12345"])
 
 
-PARAMETER_VERSION = ParameterVersion.parse("5.0.0")
+PARAMETER_VERSION = ParameterVersion.parse("6.0.0")
 
 
 class RotationAxis(StrEnum):
@@ -122,11 +122,11 @@ class HyperionParameters(BaseModel):
 
     @validator("parameter_model_version")
     def _validate_version(cls, version: ParameterVersion):
-        assert (
-            version >= ParameterVersion(major=PARAMETER_VERSION.major)
+        assert version >= ParameterVersion(
+            major=PARAMETER_VERSION.major
         ), f"Parameter version too old! This version of hyperion uses {PARAMETER_VERSION}"
-        assert (
-            version <= ParameterVersion(major=PARAMETER_VERSION.major + 1)
+        assert version <= ParameterVersion(
+            major=PARAMETER_VERSION.major + 1
         ), f"Parameter version too new! This version of hyperion uses {PARAMETER_VERSION}"
         return version
 
