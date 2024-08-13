@@ -277,9 +277,6 @@ def grid_detect_then_xray_centre_composite(
         dcm=dcm,
         flux=flux,
     )
-    eiger.odin.fan.consumers_connected.sim_put(True)
-    eiger.odin.fan.on.sim_put(True)
-    eiger.odin.meta.initialised.sim_put(True)
     oav.zoom_controller.zrst.set("1.0x")
     oav.cam.array_size.array_size_x.sim_put(1024)
     oav.cam.array_size.array_size_y.sim_put(768)
@@ -291,10 +288,6 @@ def grid_detect_then_xray_centre_composite(
     set_mock_value(undulator.current_gap, 1.11)
 
     unpatched_method = oav.parameters.load_microns_per_pixel
-    eiger.stale_params.sim_put(0)
-    eiger.odin.meta.ready.sim_put(1)
-    eiger.odin.meta.active.sim_put(1)
-    eiger.odin.fan.ready.sim_put(1)
 
     unpatched_snapshot_trigger = oav.grid_snapshot.trigger
 
@@ -335,17 +328,11 @@ def grid_detect_then_xray_centre_composite(
         yield from []
         return tip_x_px, tip_y_px
 
-    def mock_set_file_name(val, timeout):
-        eiger.odin.meta.file_name.sim_put(val)  # type: ignore
-        eiger.odin.file_writer.id.sim_put(val)  # type: ignore
-        return NullStatus()
-
     @AsyncStatus.wrap
     async def mock_complete_status():
         pass
 
     with (
-        patch.object(eiger.odin.nodes, "get_init_state", return_value=True),
         patch.object(eiger, "wait_on_arming_if_started"),
         # xsize, ysize will always be wrong since computed as 0 before we get here
         # patch up load_microns_per_pixel connect to receive non-zero values
@@ -363,11 +350,6 @@ def grid_detect_then_xray_centre_composite(
         patch("dodal.devices.areadetector.plugins.MJPG.Image.open"),
         patch.object(oav.grid_snapshot, "post_processing"),
         patch.object(oav.grid_snapshot, "trigger", side_effect=mock_snapshot_trigger),
-        patch.object(
-            eiger.odin.file_writer.file_name,
-            "set",
-            side_effect=mock_set_file_name,
-        ),
         patch.object(fast_grid_scan, "kickoff", return_value=NullStatus()),
         patch.object(fast_grid_scan, "complete", return_value=NullStatus()),
         patch.object(zocalo, "trigger", return_value=NullStatus()),

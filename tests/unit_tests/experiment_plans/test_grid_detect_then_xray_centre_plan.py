@@ -183,7 +183,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     mock_grid_detection_plan.side_effect = _fake_grid_detection
 
-    with patch.object(eiger.do_arm, "set", MagicMock()), patch.object(
+    with patch.object(
         grid_detect_devices_with_oav_config_params.aperture_scatterguard,
         "set",
         MagicMock(),

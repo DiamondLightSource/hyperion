@@ -263,6 +263,7 @@ def done_status():
 def eiger(done_status):
     eiger = i03.eiger(fake_with_ophyd_sim=True)
     eiger.stage = MagicMock(return_value=done_status)
+    eiger.do_arm.set = MagicMock(return_value=done_status)
     eiger.unstage = MagicMock(return_value=done_status)
     return eiger
 
