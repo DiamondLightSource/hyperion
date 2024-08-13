@@ -15,9 +15,6 @@ from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
 
-from hyperion.external_interaction.ispyb.ispyb_dataclass import (
-    GridscanIspybParams,
-)
 from hyperion.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
@@ -48,10 +45,6 @@ class GridCommon(
     selected_aperture: AperturePositionGDANames | None = Field(
         default=AperturePositionGDANames.SMALL_APERTURE
     )
-
-    @property
-    def ispyb_params(self):
-        return GridscanIspybParams()
 
     @property
     def detector_params(self):

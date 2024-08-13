@@ -14,7 +14,6 @@ from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
 
-from hyperion.external_interaction.ispyb.ispyb_dataclass import RotationIspybParams
 from hyperion.parameters.components import (
     DiffractionExperimentWithSample,
     IspybExperimentType,
@@ -73,16 +72,6 @@ class RotationScan(
                 self.det_dist_to_beam_converter_path
             ),
             **optional_args,
-        )
-
-    @property
-    def ispyb_params(self):  # pyright: ignore
-        return RotationIspybParams(
-            xtal_snapshots_omega_start=(
-                self.ispyb_extras.xtal_snapshots_omega_start
-                if self.ispyb_extras
-                else []
-            ),
         )
 
     @property

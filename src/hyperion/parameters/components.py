@@ -18,9 +18,6 @@ from scanspec.core import AxesPoints
 from semver import Version
 
 from hyperion.external_interaction.config_server import FeatureFlags
-from hyperion.external_interaction.ispyb.ispyb_dataclass import (
-    IspybParams,
-)
 from hyperion.parameters.constants import CONST
 
 T = TypeVar("T")
@@ -44,7 +41,7 @@ class ParameterVersion(Version):
         field_schema.update(examples=["1.0.2", "2.15.3-alpha", "21.3.15-beta+12345"])
 
 
-PARAMETER_VERSION = ParameterVersion.parse("6.0.0")
+PARAMETER_VERSION = ParameterVersion.parse("5.0.0")
 
 
 class RotationAxis(StrEnum):
@@ -195,11 +192,6 @@ class DiffractionExperiment(HyperionParameters, WithSnapshot):
     @property
     @abstractmethod
     def detector_params(self) -> DetectorParams: ...
-
-    @property
-    @abstractmethod
-    def ispyb_params(self) -> IspybParams:  # Soon to remove
-        ...
 
 
 class WithScan(BaseModel):

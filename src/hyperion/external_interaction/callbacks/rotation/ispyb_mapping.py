@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 from hyperion.external_interaction.ispyb.data_model import DataCollectionInfo
-from hyperion.external_interaction.ispyb.ispyb_dataclass import (
-    IspybParams,
-)
 from hyperion.log import ISPYB_LOGGER
+from hyperion.parameters.components import TemporaryIspybExtras
 from hyperion.parameters.rotation import RotationScan
 
 
@@ -23,17 +21,19 @@ def populate_data_collection_info_for_rotation(params: RotationScan):
         info.xtal_snapshot2,
         info.xtal_snapshot3,
         info.xtal_snapshot4,
-    ) = get_xtal_snapshots(params.ispyb_params)
+    ) = get_xtal_snapshots(params.ispyb_extras)
     return info
 
 
-def get_xtal_snapshots(ispyb_params: IspybParams):
-    if ispyb_params.xtal_snapshots_omega_start:
-        xtal_snapshots = ispyb_params.xtal_snapshots_omega_start[:4]
+def get_xtal_snapshots(ispyb_extras: TemporaryIspybExtras | None):
+    if ispyb_extras and ispyb_extras.xtal_snapshots_omega_start:
+        xtal_snapshots = ispyb_extras.xtal_snapshots_omega_start[:4]
         ISPYB_LOGGER.info(
             f"Using rotation scan snapshots {xtal_snapshots} for ISPyB deposition"
         )
     else:
-        ISPYB_LOGGER.warning("No xtal snapshot paths sent to ISPyB!")
+        ISPYB_LOGGER.info(
+            "No xtal snapshot paths sent to ISPyB from GDA, will take own snapshots"
+        )
         xtal_snapshots = []
     return xtal_snapshots + [None] * (4 - len(xtal_snapshots))
