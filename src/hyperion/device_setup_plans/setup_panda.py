@@ -1,5 +1,6 @@
-import os
+from datetime import datetime
 from enum import Enum
+from importlib import resources
 from pathlib import Path
 
 import bluesky.plan_stubs as bps
@@ -15,11 +16,12 @@ from ophyd_async.panda import (
     seq_table_from_rows,
 )
 
+import hyperion.resources.panda
 from hyperion.log import LOGGER
 
 MM_TO_ENCODER_COUNTS = 200000
 GENERAL_TIMEOUT = 60
-DETECTOR_TRIGGER_WIDTH = 1e-4
+TICKS_PER_MS = 1000  # Panda sequencer prescaler will be set to us
 
 
 class Enabled(Enum):
@@ -32,30 +34,35 @@ class PcapArm(Enum):
     DISARMED = "Disarm"
 
 
-def get_seq_table(
-    parameters: PandAGridScanParams,
-    exposure_distance_mm,
+def _get_seq_table(
+    parameters: PandAGridScanParams, exposure_distance_mm, time_between_steps_ms
 ) -> SeqTable:
     """
-    -Exposure distance is the distance travelled by the sample each time the detector is exposed: exposure time * sample velocity
-    -Setting a 'signal' means trigger PCAP internally and send signal to Eiger via physical panda output
-    -When we wait for the position to be greater/lower, give a safe distance (X_STEP_SIZE/2 * MM_TO_ENCODER counts) to ensure the final trigger point
-    is captured
+    Generate the sequencer table for the panda.
+
+    - Sending a 'trigger' means trigger PCAP internally and send signal to Eiger via physical panda output
+
     SEQUENCER TABLE:
-        1:Wait for physical trigger from motion script to mark start of scan / change of direction
-        2:Wait for POSA (X2) to be greater than X_START, then
-            send a signal out every (minimum eiger exposure time + eiger dead time)
-        3:Wait for POSA (X2) to be greater than X_START + X_STEP_SIZE + a safe distance for the final trigger, then cut out the signal
-        4:Wait for physical trigger from motion script to mark change of direction
-        5:Wait for POSA (X2) to be less than X_START + X_STEP_SIZE + exposure distance, then
-            send a signal out every (minimum eiger exposure time + eiger dead time)
-        6:Wait for POSA (X2) to be less than (X_START - safe distance + exposure distance), then cut out signal
-        7:Go back to step one.
+
+        1. Wait for physical trigger from motion script to mark start of scan / change of direction
+        2. Wait for POSA (X2) to be greater than X_START and send x_steps triggers every time_between_steps_ms
+        3. Wait for physical trigger from motion script to mark change of direction
+        4. Wait for POSA (X2) to be less than X_START + X_STEP_SIZE * x_steps + exposure distance, then
+            send x_steps triggers every time_between_steps_ms
+        5. Go back to step one.
 
         For a more detailed explanation and a diagram, see https://github.com/DiamondLightSource/hyperion/wiki/PandA-constant%E2%80%90motion-scanning
-    """
 
-    safe_distance_x_counts = int(MM_TO_ENCODER_COUNTS * parameters.x_step_size / 2)
+        For documentation on Panda itself, see https://pandablocks.github.io/PandABlocks-FPGA/master/index.html
+
+    Args:
+        exposure_distance_mm: The distance travelled by the sample each time the detector is exposed: exposure time * sample velocity
+        time_between_steps_ms: The time taken to traverse between each grid step.
+        parameters: Parameters for the panda gridscan
+
+    Returns:
+        An instance of SeqTable describing the panda sequencer table
+    """
 
     start_of_grid_x_counts = int(parameters.x_start * MM_TO_ENCODER_COUNTS)
 
@@ -67,42 +74,43 @@ def get_seq_table(
 
     exposure_distance_x_counts = int(exposure_distance_mm * MM_TO_ENCODER_COUNTS)
 
+    num_pulses = parameters.x_steps
+
+    delay_between_pulses = time_between_steps_ms * TICKS_PER_MS
+
+    PULSE_WIDTH_US = 1
+
+    assert delay_between_pulses > PULSE_WIDTH_US
+
+    # BITA_1 trigger wired from TTLIN1, this is the trigger input
+
+    # +ve direction scan
     rows = [SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1)]
+
     rows.append(
         SeqTableRow(
+            repeats=num_pulses,
             trigger=SeqTrigger.POSA_GT,
             position=start_of_grid_x_counts,
-            time2=1,
+            time1=PULSE_WIDTH_US,
             outa1=True,
-            outa2=True,
-        )
-    )
-    rows.append(
-        SeqTableRow(
-            position=end_of_grid_x_counts + safe_distance_x_counts,
-            trigger=SeqTrigger.POSA_GT,
-            time2=1,
+            time2=delay_between_pulses - PULSE_WIDTH_US,
+            outa2=False,
         )
     )
 
+    # -ve direction scan
     rows.append(SeqTableRow(trigger=SeqTrigger.BITA_1, time2=1))
+
     rows.append(
         SeqTableRow(
+            repeats=num_pulses,
             trigger=SeqTrigger.POSA_LT,
             position=end_of_grid_x_counts + exposure_distance_x_counts,
-            time2=1,
+            time1=PULSE_WIDTH_US,
             outa1=True,
-            outa2=True,
-        )
-    )
-
-    rows.append(
-        SeqTableRow(
-            trigger=SeqTrigger.POSA_LT,
-            position=start_of_grid_x_counts
-            - safe_distance_x_counts
-            + exposure_distance_x_counts,
-            time2=1,
+            time2=delay_between_pulses - PULSE_WIDTH_US,
+            outa2=False,
         )
     )
 
@@ -113,7 +121,6 @@ def get_seq_table(
 
 def setup_panda_for_flyscan(
     panda: HDFPanda,
-    config_yaml_path: str,
     parameters: PandAGridScanParams,
     initial_x: float,
     exposure_time_s: float,
@@ -127,19 +134,28 @@ def setup_panda_for_flyscan(
 
     Args:
         panda (HDFPanda): The PandA Ophyd device
-        config_yaml_path (str): Path to the yaml file containing the desired PandA PVs
         parameters (PandAGridScanParams): Grid parameters
         initial_x (float): Motor positions at time of PandA setup
         exposure_time_s (float): Detector exposure time per trigger
         time_between_x_steps_ms (float): Time, in ms, between each trigger. Equal to deadtime + exposure time
-
+        sample_velocity_mm_per_s (float): Velocity of the sample in mm/s = x_step_size_mm * 1000 /
+            time_between_x_steps_ms
     Returns:
         MsgGenerator
 
     Yields:
         Iterator[MsgGenerator]
     """
-    yield from load_device(panda, config_yaml_path)
+    assert parameters.x_steps > 0
+    assert time_between_x_steps_ms * 1000 >= exposure_time_s
+    assert sample_velocity_mm_per_s * exposure_time_s < parameters.x_step_size
+
+    yield from bps.stage(panda, group="panda-config")
+
+    with resources.as_file(
+        resources.files(hyperion.resources.panda) / "panda-gridscan.yaml"
+    ) as config_yaml_path:
+        yield from load_device(panda, str(config_yaml_path))
 
     # Home the PandA X encoder using current motor position
     yield from bps.abs_set(
@@ -148,21 +164,11 @@ def setup_panda_for_flyscan(
         wait=True,
     )
 
-    LOGGER.info(f"Setting PandA clock to period {time_between_x_steps_ms}")
-
-    yield from bps.abs_set(
-        panda.clock[1].period,  # type: ignore
-        time_between_x_steps_ms,
-        group="panda-config",
-    )
-
-    yield from bps.abs_set(
-        panda.pulse[1].width, DETECTOR_TRIGGER_WIDTH, group="panda-config"
-    )
+    yield from bps.abs_set(panda.pulse[1].width, exposure_time_s, group="panda-config")
 
     exposure_distance_mm = sample_velocity_mm_per_s * exposure_time_s
 
-    table = get_seq_table(parameters, exposure_distance_mm)
+    table = _get_seq_table(parameters, exposure_distance_mm, time_between_x_steps_ms)
 
     yield from bps.abs_set(panda.seq[1].table, table, group="panda-config")
 
@@ -195,27 +201,17 @@ def disarm_panda_for_gridscan(panda, group="disarm_panda_gridscan") -> MsgGenera
     yield from bps.abs_set(panda.pcap.arm, PcapArm.DISARMED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.counter[1].enable, Enabled.DISABLED.value, group=group)  # type: ignore
     yield from bps.abs_set(panda.seq[1].enable, Enabled.DISABLED.value, group=group)
-    yield from bps.abs_set(
-        panda.clock[1].enable, Enabled.DISABLED.value, group=group
-    )  # While disarming the clock shouldn't be necessery,
-    # it will stop the eiger continuing to trigger if something in the sequencer table goes wrong
     yield from bps.abs_set(panda.pulse[1].enable, Enabled.DISABLED.value, group=group)
     yield from bps.abs_set(panda.pcap.enable, Enabled.DISABLED.value, group=group)  # type: ignore
     yield from bps.wait(group=group, timeout=GENERAL_TIMEOUT)
 
 
-def set_and_create_panda_directory(panda_directory: Path) -> MsgGenerator:
-    """Updates and creates the panda subdirectory which is used by the PandA's PCAP.
-    See https://github.com/DiamondLightSource/hyperion/issues/1385 for a better long
-    term solution.
-    """
+def set_panda_directory(panda_directory: Path) -> MsgGenerator:
+    """Updates the root folder which is used by the PandA's PCAP."""
 
-    if not os.path.isdir(panda_directory):
-        LOGGER.debug(f"Creating PandA PCAP subdirectory at {panda_directory}")
-        # Assumes we have permissions, which should be true on Hyperion for now
-        os.makedirs(panda_directory)
+    suffix = datetime.now().strftime("_%Y%m%d%H%M%S")
 
     async def set_panda_dir():
-        await get_directory_provider().update(directory=panda_directory)
+        await get_directory_provider().update(directory=panda_directory, suffix=suffix)
 
     yield from bps.wait_for([set_panda_dir])

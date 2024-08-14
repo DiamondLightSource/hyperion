@@ -1,5 +1,3 @@
-from typing import TypeVar
-
 from daq_config_server.client import ConfigServer
 from pydantic import BaseModel
 
@@ -7,7 +5,6 @@ from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 
 _CONFIG_SERVER: ConfigServer | None = None
-T = TypeVar("T")
 
 
 def config_server() -> ConfigServer:

@@ -147,3 +147,45 @@ def test_when_pin_centre_xray_centre_called_then_detector_positioned(
         lambda msg: msg.command == "open_run"
         and msg.kwargs["subplan_name"] == "do_fgs",
     )
+
+
+@patch(
+    "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.pin_tip_centre_plan",
+    autospec=True,
+)
+@patch(
+    "hyperion.experiment_plans.pin_centre_then_xray_centre_plan.detect_grid_and_do_gridscan",
+    autospec=True,
+)
+def test_pin_centre_then_xray_centre_plan_activates_ispyb_callback_before_pin_tip_centre_plan(
+    mock_detect_grid_and_do_gridscan,
+    mock_pin_tip_centre_plan,
+    sim_run_engine: RunEngineSimulator,
+    test_pin_centre_then_xray_centre_params: PinTipCentreThenXrayCentre,
+    test_config_files,
+):
+    mock_detect_grid_and_do_gridscan.return_value = iter(
+        [Msg("detect_grid_and_do_gridscan")]
+    )
+    mock_pin_tip_centre_plan.return_value = iter([Msg("pin_tip_centre_plan")])
+
+    msgs = sim_run_engine.simulate_plan(
+        pin_centre_then_xray_centre_plan(
+            MagicMock(),
+            test_pin_centre_then_xray_centre_params,
+            test_config_files["oav_config_json"],
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "open_run"
+        and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"],
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "pin_tip_centre_plan"
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, lambda msg: msg.command == "detect_grid_and_do_gridscan"
+    )
+    assert_message_and_return_remaining(msgs, lambda msg: msg.command == "close_run")
