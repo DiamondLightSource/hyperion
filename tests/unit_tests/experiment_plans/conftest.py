@@ -9,7 +9,7 @@ from dodal.devices.oav.oav_detector import OAVConfigParams
 from dodal.devices.synchrotron import SynchrotronMode
 from dodal.devices.zocalo import ZocaloResults, ZocaloTrigger
 from event_model import Event
-from ophyd.sim import make_fake_device
+from ophyd_async.core import DeviceCollector
 from ophyd_async.core.async_status import AsyncStatus
 
 from hyperion.external_interaction.callbacks.common.callback_util import (
@@ -181,13 +181,15 @@ def fake_read(obj, initial_positions, _):
 @pytest.fixture
 def simple_beamline(detector_motion, oav, smargon, synchrotron, test_config_files, dcm):
     magic_mock = MagicMock(autospec=True)
+
+    with DeviceCollector(mock=True):
+        magic_mock.zocalo = ZocaloResults()
+        magic_mock.zebra_fast_grid_scan = ZebraFastGridScan("preifx", "fake_fgs")
+
     magic_mock.oav = oav
     magic_mock.smargon = smargon
     magic_mock.detector_motion = detector_motion
-    magic_mock.zocalo = make_fake_device(ZocaloResults)()
     magic_mock.dcm = dcm
-    scan = make_fake_device(ZebraFastGridScan)("prefix", name="fake_fgs")
-    magic_mock.zebra_fast_grid_scan = scan
     magic_mock.synchrotron = synchrotron
     oav.zoom_controller.frst.set("7.5x")
     oav.parameters = OAVConfigParams(
