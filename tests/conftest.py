@@ -414,11 +414,6 @@ def dcm(RE):
 
 
 @pytest.fixture
-def qbpm1():
-    return i03.qbpm1(fake_with_ophyd_sim=True)
-
-
-@pytest.fixture
 def vfm(RE):
     vfm = i03.vfm(fake_with_ophyd_sim=True)
     vfm.bragg_to_lat_lookup_table_path = (
