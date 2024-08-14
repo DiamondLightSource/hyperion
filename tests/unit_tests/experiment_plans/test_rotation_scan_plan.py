@@ -229,7 +229,7 @@ async def test_rotation_plan_moves_aperture_correctly(
     )
     assert aperture_scatterguard.aperture_positions
     assert (
-        await aperture_scatterguard._get_current_aperture_position()
+        await aperture_scatterguard.get_current_aperture_position()
         == aperture_scatterguard.aperture_positions.SMALL
     )
 
