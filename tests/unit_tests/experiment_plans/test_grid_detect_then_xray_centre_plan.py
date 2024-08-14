@@ -3,7 +3,9 @@ from unittest.mock import ANY, MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import pytest
+from bluesky import Msg
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import i03
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.eiger import EigerDetector
@@ -17,8 +19,13 @@ from hyperion.experiment_plans.grid_detect_then_xray_centre_plan import (
     detect_grid_and_do_gridscan,
     grid_detect_then_xray_centre,
 )
+from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
+    ispyb_activation_wrapper,
+)
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
+
+from ..conftest import OavGridSnapshotTestEvents
 
 
 def _fake_grid_detection(
@@ -82,6 +89,20 @@ def test_full_grid_scan(test_fgs_params, test_config_files):
     assert isinstance(plan, Generator)
 
 
+@pytest.fixture
+def grid_detect_devices_with_oav_config_params(
+    grid_detect_devices: GridDetectThenXRayCentreComposite, test_config_files
+) -> GridDetectThenXRayCentreComposite:
+    grid_detect_devices.oav.parameters = OAVConfigParams(
+        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    )
+    grid_detect_devices.oav.parameters.micronsPerXPixel = 0.806
+    grid_detect_devices.oav.parameters.micronsPerYPixel = 0.806
+    grid_detect_devices.oav.parameters.beam_centre_i = 549
+    grid_detect_devices.oav.parameters.beam_centre_j = 347
+    return grid_detect_devices
+
+
 @patch(
     "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
     autospec=True,
@@ -93,32 +114,33 @@ def test_full_grid_scan(test_fgs_params, test_config_files):
 async def test_detect_grid_and_do_gridscan(
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     smargon: Smargon,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
 ):
     mock_grid_detection_plan.side_effect = _fake_grid_detection
-    grid_detect_devices.oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
+    assert (
+        grid_detect_devices_with_oav_config_params.aperture_scatterguard.aperture_positions
+        is not None
     )
-    grid_detect_devices.oav.parameters.micronsPerXPixel = 0.806
-    grid_detect_devices.oav.parameters.micronsPerYPixel = 0.806
-    grid_detect_devices.oav.parameters.beam_centre_i = 549
-    grid_detect_devices.oav.parameters.beam_centre_j = 347
-    assert grid_detect_devices.aperture_scatterguard.aperture_positions is not None
 
     with patch.object(
-        grid_detect_devices.aperture_scatterguard, "set", MagicMock()
+        grid_detect_devices_with_oav_config_params.aperture_scatterguard,
+        "set",
+        MagicMock(),
     ) as mock_aperture_scatterguard:
         RE(
-            detect_grid_and_do_gridscan(
-                grid_detect_devices,
-                parameters=test_full_grid_scan_params,
-                oav_params=OAVParameters(
-                    "xrayCentring", test_config_files["oav_config_json"]
+            ispyb_activation_wrapper(
+                detect_grid_and_do_gridscan(
+                    grid_detect_devices_with_oav_config_params,
+                    parameters=test_full_grid_scan_params,
+                    oav_params=OAVParameters(
+                        "xrayCentring", test_config_files["oav_config_json"]
+                    ),
                 ),
+                test_full_grid_scan_params,
             )
         )
         # Verify we called the grid detection plan
@@ -126,13 +148,13 @@ async def test_detect_grid_and_do_gridscan(
 
         # Check backlight was moved OUT
         assert (
-            await grid_detect_devices.backlight.position.get_value()
+            await grid_detect_devices_with_oav_config_params.backlight.position.get_value()
             == BacklightPosition.OUT
         )
 
         # Check aperture was changed to SMALL
         mock_aperture_scatterguard.assert_called_once_with(
-            grid_detect_devices.aperture_scatterguard.aperture_positions.SMALL
+            grid_detect_devices_with_oav_config_params.aperture_scatterguard.aperture_positions.SMALL
         )
 
         # Check we called out to underlying fast grid scan plan
@@ -151,7 +173,7 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
     mock_flyscan_xray_centre_plan: MagicMock,
     mock_grid_detection_plan: MagicMock,
     eiger: EigerDetector,
-    grid_detect_devices: GridDetectThenXRayCentreComposite,
+    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
     RE: RunEngine,
     test_full_grid_scan_params: GridScanWithEdgeDetect,
     test_config_files: Dict,
@@ -161,22 +183,19 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
     mock_grid_detection_plan.side_effect = _fake_grid_detection
 
-    grid_detect_devices.oav.parameters = OAVConfigParams(
-        test_config_files["zoom_params_file"], test_config_files["display_config"]
-    )
-    grid_detect_devices.oav.parameters.micronsPerXPixel = 0.806
-    grid_detect_devices.oav.parameters.micronsPerYPixel = 0.806
-    grid_detect_devices.oav.parameters.beam_centre_i = 549
-    grid_detect_devices.oav.parameters.beam_centre_j = 347
-
     with patch.object(eiger.do_arm, "set", MagicMock()), patch.object(
-        grid_detect_devices.aperture_scatterguard, "set", MagicMock()
+        grid_detect_devices_with_oav_config_params.aperture_scatterguard,
+        "set",
+        MagicMock(),
     ):
         RE(
-            detect_grid_and_do_gridscan(
-                grid_detect_devices,
-                parameters=test_full_grid_scan_params,
-                oav_params=oav_params,
+            ispyb_activation_wrapper(
+                detect_grid_and_do_gridscan(
+                    grid_detect_devices_with_oav_config_params,
+                    parameters=test_full_grid_scan_params,
+                    oav_params=oav_params,
+                ),
+                test_full_grid_scan_params,
             )
         )
 
@@ -189,3 +208,111 @@ def test_when_full_grid_scan_run_then_parameters_sent_to_fgs_as_expected(
 
         # Parameters can be serialized
         params.json()
+
+
+@patch(
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    autospec=True,
+)
+@patch(
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
+    autospec=True,
+)
+def test_detect_grid_and_do_gridscan_does_not_activate_ispyb_callback(
+    mock_flyscan_xray_centre,
+    mock_grid_detection_plan,
+    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    sim_run_engine: RunEngineSimulator,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+    test_config_files,
+):
+    mock_grid_detection_plan.return_value = iter([Msg("save_oav_grids")])
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_run_engine.add_callback_handler_for_multiple(
+        "save_oav_grids",
+        [
+            [
+                (
+                    "descriptor",
+                    OavGridSnapshotTestEvents.test_descriptor_document_oav_snapshot,  # type: ignore
+                ),
+                (
+                    "event",
+                    OavGridSnapshotTestEvents.test_event_document_oav_snapshot_xy,  # type: ignore
+                ),
+                (
+                    "event",
+                    OavGridSnapshotTestEvents.test_event_document_oav_snapshot_xz,  # type: ignore
+                ),
+            ]
+        ],
+    )
+
+    msgs = sim_run_engine.simulate_plan(
+        detect_grid_and_do_gridscan(
+            grid_detect_devices_with_oav_config_params,
+            test_full_grid_scan_params,
+            OAVParameters("xrayCentring", test_config_files["oav_config_json"]),
+        )
+    )
+
+    activations = [
+        msg
+        for msg in msgs
+        if msg.command == "open_run"
+        and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"]
+    ]
+    assert not activations
+
+
+@patch(
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.grid_detection_plan",
+    autospec=True,
+)
+@patch(
+    "hyperion.experiment_plans.grid_detect_then_xray_centre_plan.flyscan_xray_centre",
+    autospec=True,
+)
+def test_grid_detect_then_xray_centre_activates_ispyb_callback(
+    mock_flyscan_xray_centre,
+    mock_grid_detection_plan,
+    sim_run_engine: RunEngineSimulator,
+    grid_detect_devices_with_oav_config_params: GridDetectThenXRayCentreComposite,
+    test_full_grid_scan_params: GridScanWithEdgeDetect,
+    test_config_files,
+):
+    mock_grid_detection_plan.return_value = iter([Msg("save_oav_grids")])
+
+    sim_run_engine.add_handler_for_callback_subscribes()
+    sim_run_engine.add_callback_handler_for_multiple(
+        "save_oav_grids",
+        [
+            [
+                (
+                    "descriptor",
+                    OavGridSnapshotTestEvents.test_descriptor_document_oav_snapshot,  # type: ignore
+                ),
+                (
+                    "event",
+                    OavGridSnapshotTestEvents.test_event_document_oav_snapshot_xy,  # type: ignore
+                ),
+                (
+                    "event",
+                    OavGridSnapshotTestEvents.test_event_document_oav_snapshot_xz,  # type: ignore
+                ),
+            ]
+        ],
+    )
+    msgs = sim_run_engine.simulate_plan(
+        grid_detect_then_xray_centre(
+            grid_detect_devices_with_oav_config_params,
+            test_full_grid_scan_params,
+            test_config_files["oav_config_json"],
+        )
+    )
+
+    assert_message_and_return_remaining(
+        msgs,
+        lambda msg: msg.command == "open_run"
+        and "GridscanISPyBCallback" in msg.kwargs["activate_callbacks"],
+    )

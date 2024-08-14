@@ -11,6 +11,7 @@ import h5py
 import numpy as np
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
 from ophyd_async.core import set_mock_value
@@ -75,7 +76,7 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
         )
     )
 
-    msgs = sim_run_engine_for_rotation.assert_message_and_return_remaining(
+    msgs = assert_message_and_return_remaining(
         msgs, lambda msg: msg.command == "stage" and msg.obj.name == "eiger"
     )[1:]
 
@@ -90,13 +91,11 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
     def _assert_set_seq_and_return_remaining(remaining, name_value_pairs):
         for name, value in name_value_pairs:
             try:
-                remaining = (
-                    sim_run_engine_for_rotation.assert_message_and_return_remaining(
-                        remaining,
-                        lambda msg: msg.command == "set"
-                        and msg.obj.name == name
-                        and msg.args == (value,),
-                    )
+                remaining = assert_message_and_return_remaining(
+                    remaining,
+                    lambda msg: msg.command == "set"
+                    and msg.obj.name == name
+                    and msg.args == (value,),
                 )
             except Exception as e:
                 raise Exception(f"Failed to find {name} being set to {value}") from e
@@ -120,14 +119,12 @@ async def test_multi_rotation_plan_runs_multiple_plans_in_one_arm(
             ],
         )
         # arming the zebra
-        msgs_within_arming = (
-            sim_run_engine_for_rotation.assert_message_and_return_remaining(
-                msgs_within_arming,
-                lambda msg: msg.command == "set" and msg.obj.name == "zebra-pc-arm",
-            )
+        msgs_within_arming = assert_message_and_return_remaining(
+            msgs_within_arming,
+            lambda msg: msg.command == "set" and msg.obj.name == "zebra-pc-arm",
         )
         # the final rel_set of omega to trigger the scan
-        sim_run_engine_for_rotation.assert_message_and_return_remaining(
+        assert_message_and_return_remaining(
             msgs_within_arming,
             lambda msg: msg.command == "set"
             and msg.obj.name == "smargon-omega"

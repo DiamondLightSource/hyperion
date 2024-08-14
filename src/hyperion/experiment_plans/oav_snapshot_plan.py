@@ -3,7 +3,7 @@ from typing import Protocol
 
 from blueapi.core import MsgGenerator
 from bluesky import plan_stubs as bps
-from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
@@ -39,9 +39,10 @@ def setup_oav_snapshot_plan(
     yield from bps.abs_set(
         composite.backlight, BacklightPosition.IN, group=OAV_SNAPSHOT_SETUP_GROUP
     )
+    assert composite.aperture_scatterguard.aperture_positions is not None
     yield from bps.abs_set(
         composite.aperture_scatterguard,
-        AperturePositions.ROBOT_LOAD,
+        composite.aperture_scatterguard.aperture_positions.ROBOT_LOAD,
         group=OAV_SNAPSHOT_SETUP_GROUP,
     )
 

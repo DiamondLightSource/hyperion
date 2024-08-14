@@ -14,7 +14,6 @@ from hyperion.parameters.constants import CONST
 
 
 @pytest.mark.s03
-@pytest.mark.asyncio
 async def test_getting_data_for_ispyb():
     undulator = Undulator(
         f"{CONST.SIM.INSERTION_PREFIX}-MO-SERVC-01:", name="undulator"

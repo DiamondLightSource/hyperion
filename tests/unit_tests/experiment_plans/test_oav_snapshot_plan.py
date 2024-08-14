@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from bluesky.simulators import assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import ApertureScatterguard
 from dodal.devices.backlight import Backlight
 from dodal.devices.oav.oav_detector import OAV
@@ -62,37 +63,37 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         )
     )
 
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "oav_cam_color_mode"
         and msg.args[0] == ColorMode.RGB1,
     )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "oav_cam_acquire_period"
         and msg.args[0] == 0.05,
     )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "oav_cam_acquire_time"
         and msg.args[0] == 0.075,
     )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "oav_cam_gain"
         and msg.args[0] == 1,
     )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "oav_zoom_controller"
         and msg.args[0] == "5.0x",
     )
-    msgs = sim_run_engine.assert_message_and_return_remaining(
+    msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "oav_snapshot_directory"
@@ -104,42 +105,38 @@ def test_oav_snapshot_plan_issues_rotations_and_generates_events(
         {"omega": 180, "filename": "100623_oav_snapshot_180"},
         {"omega": 270, "filename": "100623_oav_snapshot_270"},
     ]:
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
             and msg.obj.name == "smargon-omega"
             and msg.args[0] == expected["omega"]
             and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "set"
             and msg.obj.name == "oav_snapshot_filename"
-            and msg.args[0] == expected["filename"]
-            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
+            and msg.args[0] == expected["filename"],
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs,
-            lambda msg: msg.command == "wait"
-            and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_SHOT,
+            lambda msg: msg.command == "trigger"
+            and msg.obj.name == "oav_snapshot"
+            and msg.kwargs["group"] is None,
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
-            msgs,
-            lambda msg: msg.command == "trigger" and msg.obj.name == "oav_snapshot",
-        )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "wait" and msg.kwargs["group"] is None,
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs,
             lambda msg: msg.command == "create"
             and msg.kwargs["name"]
             == DocDescriptorNames.OAV_ROTATION_SNAPSHOT_TRIGGERED,
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "read" and msg.obj.name == "oav_snapshot"
         )
-        msgs = sim_run_engine.assert_message_and_return_remaining(
+        msgs = assert_message_and_return_remaining(
             msgs, lambda msg: msg.command == "save"
         )

@@ -56,7 +56,7 @@ from hyperion.device_setup_plans.read_hardware_for_setup import (
 )
 from hyperion.device_setup_plans.setup_panda import (
     disarm_panda_for_gridscan,
-    set_and_create_panda_directory,
+    set_panda_directory,
     setup_panda_for_flyscan,
 )
 from hyperion.device_setup_plans.setup_zebra import (
@@ -76,10 +76,6 @@ from hyperion.utils.aperturescatterguard import (
     load_default_aperture_scatterguard_positions_if_unset,
 )
 from hyperion.utils.context import device_composite_from_context
-
-PANDA_SETUP_PATH = (
-    "/dls_sw/i03/software/daq_configuration/panda_configs/flyscan_pcap_ignore_seq.yaml"
-)
 
 
 class SmargonSpeedException(Exception):
@@ -469,6 +465,7 @@ def _panda_tidy(fgs_composite: FlyScanXRayCentreComposite):
     yield from disarm_panda_for_gridscan(fgs_composite.panda, group)
     yield from _generic_tidy(fgs_composite, group, False)
     yield from bps.wait(group, timeout=10)
+    yield from bps.unstage(fgs_composite.panda)
 
 
 def _zebra_triggering_setup(
@@ -521,13 +518,11 @@ def _panda_triggering_setup(
         time_between_x_steps_ms,
     )
 
-    panda_directory = Path(parameters.storage_directory, "panda")
-
-    set_and_create_panda_directory(panda_directory)
+    directory_provider_root = Path(parameters.storage_directory)
+    yield from set_panda_directory(directory_provider_root)
 
     yield from setup_panda_for_flyscan(
         fgs_composite.panda,
-        PANDA_SETUP_PATH,
         parameters.panda_FGS_params,
         initial_xyz[0],
         parameters.exposure_time_s,

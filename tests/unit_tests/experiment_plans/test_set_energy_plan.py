@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.xbpm_feedback import Pause
 
@@ -35,39 +36,39 @@ def test_set_energy(
     set_energy_composite,
 ):
     messages = sim_run_engine.simulate_plan(set_energy_plan(11.1, set_energy_composite))
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages,
         lambda msg: msg.command == "set"
         and msg.obj.name == "xbpm_feedback-pause_feedback"
         and msg.args == (Pause.PAUSE,),
     )
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "attenuator"
         and msg.args == (0.1,),
     )
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "undulator_dcm"
         and msg.args == (11.1,)
         and msg.kwargs["group"] == "UNDULATOR_GROUP",
     )
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages[1:], lambda msg: msg.command == "adjust_dcm_pitch_roll_vfm_from_lut"
     )
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "wait" and msg.kwargs["group"] == "UNDULATOR_GROUP",
     )
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "xbpm_feedback-pause_feedback"
         and msg.args == (Pause.RUN,),
     )
-    messages = sim_run_engine.assert_message_and_return_remaining(
+    messages = assert_message_and_return_remaining(
         messages[1:],
         lambda msg: msg.command == "set"
         and msg.obj.name == "attenuator"

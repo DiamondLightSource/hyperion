@@ -102,7 +102,6 @@ def run_zocalo_with_dev_ispyb(
     return inner
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 async def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_to_fallback(
     run_zocalo_with_dev_ispyb, zocalo_env
@@ -112,7 +111,6 @@ async def test_given_a_result_with_no_diffraction_when_zocalo_called_then_move_t
     assert np.allclose(centre, fallback)
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 async def test_given_a_result_with_no_diffraction_ispyb_comment_updated(
     run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
@@ -123,7 +121,6 @@ async def test_given_a_result_with_no_diffraction_ispyb_comment_updated(
     assert "Zocalo found no crystals in this gridscan." in comment
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 async def test_zocalo_adds_nonzero_comment_time(
     run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
@@ -138,7 +135,6 @@ async def test_zocalo_adds_nonzero_comment_time(
     assert time_s < 180
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 async def test_given_a_single_crystal_result_ispyb_comment_updated(
     run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment
@@ -150,7 +146,6 @@ async def test_given_a_single_crystal_result_ispyb_comment_updated(
     assert "Size (grid boxes)" in comment
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 async def test_given_a_result_with_multiple_crystals_ispyb_comment_updated(
     run_zocalo_with_dev_ispyb, zocalo_env, fetch_comment

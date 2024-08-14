@@ -64,16 +64,16 @@ BASIC_POST_SETUP_DOC = {
 def sim_run_engine_for_rotation(sim_run_engine):
     sim_run_engine.add_handler(
         "read",
-        "synchrotron-synchrotron_mode",
         lambda msg: {"values": {"value": SynchrotronMode.USER}},
+        "synchrotron-synchrotron_mode",
     )
     sim_run_engine.add_handler(
         "read",
-        "synchrotron-top_up_start_countdown",
         lambda msg: {"values": {"value": -1}},
+        "synchrotron-top_up_start_countdown",
     )
     sim_run_engine.add_handler(
-        "read", "smargon_omega", lambda msg: {"values": {"value": -1}}
+        "read", lambda msg: {"values": {"value": -1}}, "smargon_omega"
     )
     return sim_run_engine
 

@@ -167,9 +167,7 @@ class TestXrayCentreIspybHandler:
     ):
         ispyb_handler = GridscanISPyBCallback()
 
-        ispyb_handler.activity_gated_start(
-            td.test_gridscan3d_start_document
-        )  # type:ignore
+        ispyb_handler.activity_gated_start(td.test_gridscan3d_start_document)  # type:ignore
 
         ispyb_handler.activity_gated_start(td.test_do_fgs_start_document)  # type:ignore
         ispyb_handler.activity_gated_stop(td.test_do_fgs_gridscan_stop_document)

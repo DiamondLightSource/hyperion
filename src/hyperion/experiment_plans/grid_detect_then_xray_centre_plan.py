@@ -109,16 +109,6 @@ def detect_grid_and_do_gridscan(
     parameters: GridScanWithEdgeDetect,
     oav_params: OAVParameters,
 ):
-    yield from ispyb_activation_wrapper(
-        _detect_grid_and_do_gridscan(composite, parameters, oav_params), parameters
-    )
-
-
-def _detect_grid_and_do_gridscan(
-    composite: GridDetectThenXRayCentreComposite,
-    parameters: GridScanWithEdgeDetect,
-    oav_params: OAVParameters,
-):
     assert composite.aperture_scatterguard.aperture_positions is not None
 
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
@@ -202,10 +192,13 @@ def grid_detect_then_xray_centre(
 
     oav_params = OAVParameters("xrayCentring", oav_config)
 
-    plan_to_perform = detect_grid_and_do_gridscan(
-        composite,
+    plan_to_perform = ispyb_activation_wrapper(
+        detect_grid_and_do_gridscan(
+            composite,
+            parameters,
+            oav_params,
+        ),
         parameters,
-        oav_params,
     )
 
     return start_preparing_data_collection_then_do_plan(
