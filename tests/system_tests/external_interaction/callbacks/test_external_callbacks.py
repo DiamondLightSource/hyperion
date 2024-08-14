@@ -136,7 +136,6 @@ def test_RE_with_external_callbacks_starts_and_stops(
     RE(plan())
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 async def test_external_callbacks_handle_gridscan_ispyb_and_zocalo(
     RE_with_external_callbacks: RunEngine,

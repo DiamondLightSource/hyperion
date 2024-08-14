@@ -125,14 +125,12 @@ async def fxc_composite():
     return composite
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 def test_s03_devices_connect(fxc_composite: FlyScanXRayCentreComposite):
     assert fxc_composite.aperture_scatterguard
     assert fxc_composite.backlight
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 def test_read_hardware_pre_collection(
     RE: RunEngine,
@@ -160,7 +158,6 @@ def test_read_hardware_pre_collection(
     )
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 def test_xbpm_feedback_decorator(
     RE: RunEngine,
@@ -184,7 +181,6 @@ def test_xbpm_feedback_decorator(
     assert fxc_composite.xbpm_feedback.pos_stable.get() == 1
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
@@ -220,7 +216,6 @@ def test_full_plan_tidies_at_end(
     set_shutter_to_manual.assert_called_once()
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 @patch("bluesky.plan_stubs.wait", autospec=True)
 @patch("bluesky.plan_stubs.kickoff", autospec=True)
@@ -250,7 +245,6 @@ def test_full_plan_tidies_at_end_when_plan_fails(
 
 
 @patch("hyperion.external_interaction.callbacks.zocalo_callback.ZocaloTrigger")
-@pytest.mark.asyncio
 @pytest.mark.s03
 def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_entry(
     zocalo_trigger: MagicMock,
@@ -282,7 +276,6 @@ def test_GIVEN_scan_invalid_WHEN_plan_run_THEN_ispyb_entry_made_but_no_zocalo_en
     zocalo_trigger.run_start.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     RE: RunEngine,
@@ -317,7 +310,6 @@ def test_complete_xray_centre_plan_with_no_callbacks_falls_back_to_centre(
     assert fxc_composite.sample_motors.z.user_readback.get() == pytest.approx(-1)
 
 
-@pytest.mark.asyncio
 @pytest.mark.s03
 def test_complete_xray_centre_plan_with_callbacks_moves_to_centre(
     RE: RunEngine,

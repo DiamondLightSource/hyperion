@@ -75,7 +75,7 @@ from hyperion.log import (
     do_default_logging_setup,
 )
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
-from hyperion.parameters.rotation import RotationScan
+from hyperion.parameters.rotation import MultiRotationScan, RotationScan
 
 i03.DAQ_CONFIGURATION_PATH = "tests/test_data/test_daq_configuration"
 
@@ -253,6 +253,15 @@ def test_rotation_params_nomove():
 
 
 @pytest.fixture
+def test_multi_rotation_params():
+    return MultiRotationScan(
+        **raw_params_from_file(
+            "tests/test_data/parameter_json_files/good_test_multi_rotation_scan_parameters.json"
+        )
+    )
+
+
+@pytest.fixture
 def done_status():
     s = Status()
     s.set_finished()
@@ -331,8 +340,7 @@ def s4_slit_gaps():
 
 
 @pytest.fixture
-def synchrotron():
-    RunEngine()  # A RE is needed to start the bluesky loop
+def synchrotron(RE):
     synchrotron = i03.synchrotron(fake_with_ophyd_sim=True)
     set_mock_value(synchrotron.synchrotron_mode, SynchrotronMode.USER)
     set_mock_value(synchrotron.top_up_start_countdown, 10)
@@ -571,7 +579,6 @@ def fake_create_rotation_devices(
     dcm: DCM,
     robot: BartRobot,
     oav: OAV,
-    done_status,
 ):
     set_mock_value(smargon.omega.max_velocity, 131)
     oav.zoom_controller.onst.sim_put("1.0x")  # type: ignore
@@ -752,6 +759,113 @@ def extract_metafile(input_filename, output_filename):
 @pytest.fixture
 def sim_run_engine():
     return RunEngineSimulator()
+
+
+class DocumentCapturer:
+    """A utility which can be subscribed to the RunEngine in place of a callback in order
+    to intercept documents and make assertions about their contents"""
+
+    def __init__(self) -> None:
+        self.docs_received: list[tuple[str, dict[str, Any]]] = []
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        self.docs_received.append((args[0], args[1]))
+
+    @staticmethod
+    def is_match(
+        doc: tuple[str, dict[str, Any]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+    ):
+        """Returns True if the given document:
+        - has the same name
+        - contains all the fields in has_fields
+        - contains all the fields in matches_fields with the same content"""
+
+        return (
+            doc[0] == name
+            and all(f in doc[1].keys() for f in has_fields)
+            and matches_fields.items() <= doc[1].items()
+        )
+
+    @staticmethod
+    def get_matches(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+    ):
+        """Get all the docs from docs which:
+        - have the same name
+        - contain all the fields in has_fields
+        - contain all the fields in matches_fields with the same content"""
+        return list(
+            filter(
+                partial(
+                    DocumentCapturer.is_match,
+                    name=name,
+                    has_fields=has_fields,
+                    matches_fields=matches_fields,
+                ),
+                docs,
+            )
+        )
+
+    @staticmethod
+    def assert_doc(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+        does_exist: bool = True,
+    ):
+        """Assert that a matching doc has been recieved by the sim,
+        and returns the first match if it is meant to exist"""
+        matches = DocumentCapturer.get_matches(docs, name, has_fields, matches_fields)
+        if does_exist:
+            assert matches
+            return matches[0]
+        else:
+            assert matches == []
+
+    @staticmethod
+    def get_docs_until(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+    ):
+        """return all the docs from the list of docs until the first matching one"""
+        for i, doc in enumerate(docs):
+            if DocumentCapturer.is_match(doc, name, has_fields, matches_fields):
+                return docs[: i + 1]
+        raise ValueError(f"Doc {name=}, {has_fields=}, {matches_fields=} not found")
+
+    @staticmethod
+    def get_docs_from(
+        docs: list[tuple[str, dict[str, Any]]],
+        name: str,
+        has_fields: Sequence[str] = [],
+        matches_fields: dict[str, Any] = {},
+    ):
+        """return all the docs from the list of docs after the first matching one"""
+        for i, doc in enumerate(docs):
+            if DocumentCapturer.is_match(doc, name, has_fields, matches_fields):
+                return docs[i:]
+        raise ValueError(f"Doc {name=}, {has_fields=}, {matches_fields=} not found")
+
+    @staticmethod
+    def assert_events_and_data_in_order(
+        docs: list[tuple[str, dict[str, Any]]],
+        match_data_keys_list: Sequence[Sequence[str]],
+    ):
+        for event_data_keys in match_data_keys_list:
+            docs = DocumentCapturer.get_docs_from(docs, "event")
+            doc = docs.pop(0)[1]["data"]
+            assert all(
+                k in doc.keys() for k in event_data_keys
+            ), f"One of {event_data_keys=} not in {doc}"
 
 
 @pytest.fixture

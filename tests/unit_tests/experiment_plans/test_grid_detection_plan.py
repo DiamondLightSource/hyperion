@@ -113,7 +113,6 @@ def test_grid_detection_plan_runs_and_triggers_snapshots(
     lambda a, b: True,
 )
 @patch("bluesky.plan_stubs.sleep", new=MagicMock())
-@pytest.mark.asyncio
 async def test_grid_detection_plan_gives_warning_error_if_tip_not_found(
     RE,
     test_config_files,
