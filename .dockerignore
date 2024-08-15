@@ -2,6 +2,7 @@
 .github
 .pytest_cache
 .ruff_cache
+**/__pycache__/
 
 # virtualenv stuff - this gets built by the docker script
 .venv
