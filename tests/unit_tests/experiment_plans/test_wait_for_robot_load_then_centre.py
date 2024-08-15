@@ -405,6 +405,62 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
     "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
     MagicMock(return_value=iter([])),
 )
+def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_smargon_enabled(
+    mock_centring_plan: MagicMock,
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
+    sim_run_engine: RunEngineSimulator,
+):
+    initial_values = {"x": 0.11, "y": 0.12, "z": 0.13}
+
+    def get_read(axis, msg):
+        return {f"lower_gonio-{axis}": {"value": initial_values[axis]}}
+
+    for axis in initial_values.keys():
+        sim_run_engine.add_handler(
+            "read", partial(get_read, axis), f"lower_gonio-{axis}"
+        )
+
+    messages = sim_run_engine.simulate_plan(
+        robot_load_then_centre(
+            robot_load_composite,
+            robot_load_then_centre_params_no_energy,
+        )
+    )
+
+    assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "set" and msg.obj.name == "robot"
+    )
+
+    for axis in initial_values.keys():
+        messages = assert_message_and_return_remaining(
+            messages,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == f"lower_gonio-{axis}"
+            and msg.args == (0,),
+        )
+
+    assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "read" and msg.obj.name == "smargon-disabled",
+    )
+
+    for axis, initial in initial_values.items():
+        messages = assert_message_and_return_remaining(
+            messages,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == f"lower_gonio-{axis}"
+            and msg.args == (initial,),
+        )
+
+
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+)
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
 def test_when_plan_run_then_thawing_turned_on_for_expected_time(
     mock_centring_plan: MagicMock,
     robot_load_composite: RobotLoadThenCentreComposite,
