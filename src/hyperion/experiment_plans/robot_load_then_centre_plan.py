@@ -169,7 +169,9 @@ def do_robot_load(
 
     yield from bps.wait("robot_load")
 
-    yield from bps.abs_set(composite.thawer.thaw_for_time_s, thawing_time)
+    yield from bps.abs_set(
+        composite.thawer.thaw_for_time_s, thawing_time, group="thawing_finished"
+    )
     yield from wait_for_smargon_not_disabled(composite.smargon)
 
 
