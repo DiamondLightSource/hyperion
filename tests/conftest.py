@@ -47,9 +47,7 @@ from dodal.devices.webcam import Webcam
 from dodal.devices.zebra import Zebra
 from dodal.log import LOGGER as dodal_logger
 from dodal.log import set_up_all_logging_handlers
-from ophyd.epics_motor import EpicsMotor
 from ophyd.sim import NullStatus
-from ophyd.status import Status
 from ophyd_async.core import Device, DeviceVector, callback_on_mock_put, set_mock_value
 from ophyd_async.core.async_status import AsyncStatus
 from ophyd_async.epics.motion.motor import Motor
@@ -178,20 +176,6 @@ def RE():
     del RE
 
 
-def mock_set(motor: EpicsMotor, val):
-    motor.user_setpoint.sim_put(val)  # type: ignore
-    motor.user_readback.sim_put(val)  # type: ignore
-    return Status(done=True, success=True)
-
-
-def patch_motor(motor: EpicsMotor):
-    return patch.object(motor, "set", MagicMock(side_effect=partial(mock_set, motor)))
-
-
-async def mock_good_coroutine():
-    return asyncio.sleep(0)
-
-
 def pass_on_mock(motor, call_log: MagicMock | None = None):
     def _pass_on_mock(value, **kwargs):
         set_mock_value(motor.user_readback, value)
@@ -263,15 +247,14 @@ def test_multi_rotation_params():
 
 @pytest.fixture
 def done_status():
-    s = Status()
-    s.set_finished()
-    return s
+    return NullStatus()
 
 
 @pytest.fixture
 def eiger(done_status):
     eiger = i03.eiger(fake_with_ophyd_sim=True)
     eiger.stage = MagicMock(return_value=done_status)
+    eiger.do_arm.set = MagicMock(return_value=done_status)
     eiger.unstage = MagicMock(return_value=done_status)
     return eiger
 
@@ -306,7 +289,7 @@ def zebra():
 
     def mock_side(*args, **kwargs):
         set_mock_value(zebra.pc.arm.armed, *args, **kwargs)
-        return Status(done=True, success=True)
+        return NullStatus()
 
     zebra.pc.arm.set = MagicMock(side_effect=mock_side)
     return zebra
@@ -547,7 +530,7 @@ def fake_create_devices(
     detector_motion: DetectorMotion,
     aperture_scatterguard: ApertureScatterguard,
 ):
-    mock_omega_sets = MagicMock(return_value=Status(done=True, success=True))
+    mock_omega_sets = MagicMock(return_value=NullStatus())
 
     smargon.omega.velocity.set = mock_omega_sets
     smargon.omega.set = mock_omega_sets

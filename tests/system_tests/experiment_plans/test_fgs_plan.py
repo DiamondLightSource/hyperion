@@ -14,7 +14,7 @@ from dodal.common.beamlines.beamline_parameters import (
 )
 from dodal.devices.aperturescatterguard import AperturePositions
 from dodal.devices.smargon import Smargon
-from ophyd.status import Status
+from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
 from hyperion.device_setup_plans.read_hardware_for_setup import (
@@ -116,8 +116,8 @@ async def fxc_composite():
     )
     composite.eiger.cam.manual_trigger.put("Yes")
     composite.eiger.odin.check_odin_initialised = lambda: (True, "")
-    composite.eiger.stage = MagicMock(return_value=Status(done=True, success=True))
-    composite.eiger.unstage = MagicMock(return_value=Status(done=True, success=True))
+    composite.eiger.stage = MagicMock(return_value=NullStatus())
+    composite.eiger.unstage = MagicMock(return_value=NullStatus())
 
     set_mock_value(composite.xbpm_feedback.pos_ok, True)
     set_mock_value(composite.xbpm_feedback.pos_stable, True)
