@@ -169,6 +169,7 @@ class DiffractionExperiment(HyperionParameters, WithSnapshot):
     demand_energy_ev: float | None = Field(default=None, gt=0)
     run_number: int | None = Field(default=None, ge=0)
     selected_aperture: AperturePositionGDANames | None = Field(default=None)
+    transmission_frac: float = Field(default=0.1)
     ispyb_experiment_type: IspybExperimentType
     storage_directory: str
 

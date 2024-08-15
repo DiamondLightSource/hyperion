@@ -36,7 +36,6 @@ class GridCommon(
     grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
     exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
     use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)
-    transmission_frac: float = Field(default=1)
     panda_runup_distance_mm: float = Field(
         default=CONST.HARDWARE.PANDA_FGS_RUN_UP_DEFAULT
     )
