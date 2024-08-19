@@ -95,8 +95,7 @@ def test_fgs_params(request):
     yield params
 
 
-@pytest.fixture
-def mock_ispyb_conn(base_ispyb_conn):
+def _mock_ispyb_conn(base_ispyb_conn, position_id, dcgid, dcids, giids):
     def upsert_data_collection(values):
         kvpairs = remap_upsert_columns(
             list(MXAcquisition.get_data_collection_params()), values
@@ -106,12 +105,10 @@ def mock_ispyb_conn(base_ispyb_conn):
         else:
             return next(upsert_data_collection.i)  # pyright: ignore
 
-    upsert_data_collection.i = iter(TEST_DATA_COLLECTION_IDS)  # pyright: ignore
-
     mx_acq = base_ispyb_conn.return_value.mx_acquisition
     mx_acq.upsert_data_collection.side_effect = upsert_data_collection
-    mx_acq.update_dc_position.return_value = TEST_POSITION_ID
-    mx_acq.upsert_data_collection_group.return_value = TEST_DATA_COLLECTION_GROUP_ID
+    mx_acq.update_dc_position.return_value = position_id
+    mx_acq.upsert_data_collection_group.return_value = dcgid
 
     def upsert_dc_grid(values):
         kvpairs = remap_upsert_columns(list(MXAcquisition.get_dc_grid_params()), values)
@@ -120,10 +117,33 @@ def mock_ispyb_conn(base_ispyb_conn):
         else:
             return next(upsert_dc_grid.i)  # pyright: ignore
 
-    upsert_dc_grid.i = iter(TEST_GRID_INFO_IDS)  # pyright: ignore
+    upsert_data_collection.i = iter(dcids)  # pyright: ignore
+    upsert_dc_grid.i = iter(giids)  # pyright: ignore
 
     mx_acq.upsert_dc_grid.side_effect = upsert_dc_grid
     return base_ispyb_conn
+
+
+@pytest.fixture
+def mock_ispyb_conn(base_ispyb_conn):
+    return _mock_ispyb_conn(
+        base_ispyb_conn,
+        TEST_POSITION_ID,
+        TEST_DATA_COLLECTION_GROUP_ID,
+        TEST_DATA_COLLECTION_IDS,
+        TEST_GRID_INFO_IDS,
+    )
+
+
+@pytest.fixture
+def mock_ispyb_conn_multiscan(base_ispyb_conn):
+    return _mock_ispyb_conn(
+        base_ispyb_conn,
+        TEST_POSITION_ID,
+        TEST_DATA_COLLECTION_GROUP_ID,
+        list(range(12, 24)),
+        list(range(56, 68)),
+    )
 
 
 def mx_acquisition_from_conn(mock_ispyb_conn) -> MagicMock:

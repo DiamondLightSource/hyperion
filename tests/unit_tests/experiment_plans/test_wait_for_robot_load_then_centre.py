@@ -7,11 +7,10 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from bluesky.utils import Msg
 from dodal.devices.aperturescatterguard import AperturePositions
-from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAV
-from dodal.devices.smargon import Smargon, StubPosition
+from dodal.devices.smargon import StubPosition
 from dodal.devices.webcam import Webcam
-from ophyd.sim import NullStatus, instantiate_fake_device
+from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
 
 from hyperion.experiment_plans.robot_load_then_centre_plan import (
@@ -30,7 +29,7 @@ from ...conftest import raw_params_from_file
 
 @pytest.fixture
 def robot_load_composite(
-    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer, lower_gonio
+    smargon, dcm, robot, aperture_scatterguard, oav, webcam, thawer, lower_gonio, eiger
 ) -> RobotLoadThenCentreComposite:
     composite: RobotLoadThenCentreComposite = MagicMock()
     composite.smargon = smargon
@@ -44,6 +43,7 @@ def robot_load_composite(
     composite.webcam = webcam
     composite.lower_gonio = lower_gonio
     composite.thawer = thawer
+    composite.eiger = eiger
     return composite
 
 
@@ -131,6 +131,7 @@ def test_robot_load_then_centre_doesnt_set_energy_if_not_specified_and_current_e
     robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
     sim_run_engine: RunEngineSimulator,
 ):
+    robot_load_composite.eiger.set_detector_parameters = MagicMock()
     sim_run_engine.add_handler(
         "read",
         lambda msg: {"dcm-energy_in_kev": {"value": 11.105}},
@@ -153,9 +154,6 @@ def run_simulating_smargon_wait(
     total_disabled_reads,
     sim_run_engine: RunEngineSimulator,
 ):
-    robot_load_composite.smargon = instantiate_fake_device(Smargon, name="smargon")
-    robot_load_composite.eiger = instantiate_fake_device(EigerDetector, name="eiger")
-
     num_of_reads = 0
 
     def return_not_disabled_after_reads(_):
@@ -390,6 +388,62 @@ def test_given_lower_gonio_moved_when_robot_load_then_lower_gonio_moved_to_home_
             and msg.obj.name == f"lower_gonio-{axis}"
             and msg.args == (0,),
         )
+
+    for axis, initial in initial_values.items():
+        messages = assert_message_and_return_remaining(
+            messages,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == f"lower_gonio-{axis}"
+            and msg.args == (initial,),
+        )
+
+
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.pin_centre_then_xray_centre_plan"
+)
+@patch(
+    "hyperion.experiment_plans.robot_load_then_centre_plan.set_energy_plan",
+    MagicMock(return_value=iter([])),
+)
+def test_when_plan_run_then_lower_gonio_moved_before_robot_loads_and_back_after_smargon_enabled(
+    mock_centring_plan: MagicMock,
+    robot_load_composite: RobotLoadThenCentreComposite,
+    robot_load_then_centre_params_no_energy: RobotLoadThenCentre,
+    sim_run_engine: RunEngineSimulator,
+):
+    initial_values = {"x": 0.11, "y": 0.12, "z": 0.13}
+
+    def get_read(axis, msg):
+        return {f"lower_gonio-{axis}": {"value": initial_values[axis]}}
+
+    for axis in initial_values.keys():
+        sim_run_engine.add_handler(
+            "read", partial(get_read, axis), f"lower_gonio-{axis}"
+        )
+
+    messages = sim_run_engine.simulate_plan(
+        robot_load_then_centre(
+            robot_load_composite,
+            robot_load_then_centre_params_no_energy,
+        )
+    )
+
+    assert_message_and_return_remaining(
+        messages, lambda msg: msg.command == "set" and msg.obj.name == "robot"
+    )
+
+    for axis in initial_values.keys():
+        messages = assert_message_and_return_remaining(
+            messages,
+            lambda msg: msg.command == "set"
+            and msg.obj.name == f"lower_gonio-{axis}"
+            and msg.args == (0,),
+        )
+
+    assert_message_and_return_remaining(
+        messages,
+        lambda msg: msg.command == "read" and msg.obj.name == "smargon-disabled",
+    )
 
     for axis, initial in initial_values.items():
         messages = assert_message_and_return_remaining(

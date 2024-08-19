@@ -9,6 +9,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
 from dodal.devices.backlight import BacklightPosition
+from dodal.devices.detector.detector_motion import ShutterState
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
 from dodal.devices.synchrotron import SynchrotronMode
@@ -203,9 +204,9 @@ async def test_full_rotation_plan_smargon_settings(
 
     assert await smargon.phi.user_readback.get_value() == params.phi_start_deg
     assert await smargon.chi.user_readback.get_value() == params.chi_start_deg
-    assert await smargon.x.user_readback.get_value() == params.x_start_um
-    assert await smargon.y.user_readback.get_value() == params.y_start_um
-    assert await smargon.z.user_readback.get_value() == params.z_start_um
+    assert await smargon.x.user_readback.get_value() == params.x_start_um / 1000  # type: ignore
+    assert await smargon.y.user_readback.get_value() == params.y_start_um / 1000  # type: ignore
+    assert await smargon.z.user_readback.get_value() == params.z_start_um / 1000  # type: ignore
     assert (
         # 4 * snapshots, restore omega, 1 * rotation sweep
         omega_set.call_count
@@ -230,7 +231,7 @@ async def test_rotation_plan_moves_aperture_correctly(
     )
     assert aperture_scatterguard.aperture_positions
     assert (
-        await aperture_scatterguard._get_current_aperture_position()
+        await aperture_scatterguard.get_current_aperture_position()
         == aperture_scatterguard.aperture_positions.SMALL
     )
 
@@ -252,7 +253,7 @@ async def test_rotation_plan_smargon_doesnt_move_xyz_if_not_given_in_params(
         get_mock_put(motor.user_setpoint).assert_not_called()  # type: ignore
 
 
-@patch("hyperion.experiment_plans.rotation_scan_plan.cleanup_plan", autospec=True)
+@patch("hyperion.experiment_plans.rotation_scan_plan._cleanup_plan", autospec=True)
 @patch("bluesky.plan_stubs.wait", autospec=True)
 def test_cleanup_happens(
     bps_wait: MagicMock,
@@ -294,12 +295,14 @@ def test_cleanup_happens(
 
 def test_rotation_plan_reads_hardware(
     fake_create_rotation_devices: RotationScanComposite,
-    test_rotation_params: RotationScan,
-    motion_values: RotationMotionProfile,
-    sim_run_engine: RunEngineSimulator,
+    test_rotation_params,
+    motion_values,
+    sim_run_engine_for_rotation: RunEngineSimulator,
 ):
-    _add_sim_handlers_for_normal_operation(fake_create_rotation_devices, sim_run_engine)
-    msgs = sim_run_engine.simulate_plan(
+    _add_sim_handlers_for_normal_operation(
+        fake_create_rotation_devices, sim_run_engine_for_rotation
+    )
+    msgs = sim_run_engine_for_rotation.simulate_plan(
         rotation_scan_plan(
             fake_create_rotation_devices, test_rotation_params, motion_values
         )
@@ -346,14 +349,14 @@ def test_rotation_scan_initialises_detector_distance_shutter_and_tx_fraction(
         rotation_scan_simulated_messages,
         lambda msg: msg.command == "set"
         and msg.args[0] == test_rotation_params.detector_distance_mm
-        and msg.obj.name == "detector_motion_z"
+        and msg.obj.name == "detector_motion-z"
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
         msgs,
         lambda msg: msg.command == "set"
-        and msg.args[0] == 1
-        and msg.obj.name == "detector_motion_shutter"
+        and msg.args[0] == ShutterState.OPEN
+        and msg.obj.name == "detector_motion-shutter"
         and msg.kwargs["group"] == CONST.WAIT.ROTATION_READY_FOR_DC,
     )
     msgs = assert_message_and_return_remaining(
@@ -383,7 +386,7 @@ def test_rotation_scan_moves_gonio_to_start_before_snapshots(
     msgs = assert_message_and_return_remaining(
         rotation_scan_simulated_messages,
         lambda msg: msg.command == "wait"
-        and msg.kwargs["group"] == "move_gonio_to_start",
+        and msg.kwargs["group"] == CONST.WAIT.MOVE_GONIO_TO_START,
     )
     msgs = assert_message_and_return_remaining(
         msgs,

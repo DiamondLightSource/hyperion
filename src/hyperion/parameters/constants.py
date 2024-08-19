@@ -30,6 +30,7 @@ class PlanNameConstants:
     GRIDSCAN_MAIN = "run_gridscan"
     DO_FGS = "do_fgs"
     # Rotation scan
+    ROTATION_MULTI = "multi_rotation_wrapper"
     ROTATION_OUTER = "rotation_scan_with_cleanup"
     ROTATION_MAIN = "rotation_scan_main"
 
@@ -39,6 +40,7 @@ class PlanGroupCheckpointConstants:
     # For places to synchronise / stop and wait in plans, use as bluesky group names
     GRID_READY_FOR_DC = "grid_ready_for_data_collection"
     ROTATION_READY_FOR_DC = "rotation_ready_for_data_collection"
+    MOVE_GONIO_TO_START = "move_gonio_to_start"
 
 
 @dataclass(frozen=True)
