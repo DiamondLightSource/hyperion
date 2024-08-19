@@ -63,9 +63,9 @@ class HyperionParameters(BaseModel):
 class HyperionDiffractionExperiment(DiffractionExperiment, HyperionParameters):
     """For all experiments which use beam"""
 
-    beamline: str = Field(default=CONST.I03.BEAMLINE, pattern=r"BL\d{2}[BIJS]")
+    beamline: str = Field(default=CONST.I03.BEAMLINE, regex=r"BL\d{2}[BIJS]")
     insertion_prefix: str = Field(
-        default=CONST.I03.INSERTION_PREFIX, pattern=r"SR\d{2}[BIJS]"
+        default=CONST.I03.INSERTION_PREFIX, regex=r"SR\d{2}[BIJS]"
     )
     det_dist_to_beam_converter_path: str = Field(
         default=CONST.PARAM.DETECTOR.BEAM_XY_LUT_PATH
