@@ -12,6 +12,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.synchrotron import SynchrotronMode
+from mx_bluesky.parameters import IspybExperimentType
 from ophyd.sim import NullStatus
 from ophyd_async.core import AsyncStatus, set_mock_value
 
@@ -48,7 +49,6 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
-from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
 from hyperion.parameters.rotation import RotationScan
@@ -446,9 +446,7 @@ def composite_for_rotation_scan(fake_create_rotation_devices: RotationScanCompos
         fake_create_rotation_devices.dcm.energy_in_kev.user_readback,
         energy_ev / 1000,  # pyright: ignore
     )
-    set_mock_value(
-        fake_create_rotation_devices.undulator.current_gap, 1.12
-    )  # pyright: ignore
+    set_mock_value(fake_create_rotation_devices.undulator.current_gap, 1.12)  # pyright: ignore
     set_mock_value(
         fake_create_rotation_devices.synchrotron.synchrotron_mode,
         SynchrotronMode.USER,
