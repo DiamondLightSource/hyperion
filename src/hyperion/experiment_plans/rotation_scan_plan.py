@@ -51,9 +51,6 @@ from hyperion.parameters.rotation import (
     MultiRotationScan,
     RotationScan,
 )
-from hyperion.utils.aperturescatterguard import (
-    load_default_aperture_scatterguard_positions_if_unset,
-)
 from hyperion.utils.context import device_composite_from_context
 
 
@@ -75,12 +72,6 @@ class RotationScanComposite(OavSnapshotComposite):
     s4_slit_gaps: S4SlitGaps
     zebra: Zebra
     oav: OAV
-
-    def __post_init__(self):
-        """Ensure that aperture positions are loaded whenever this class is created."""
-        load_default_aperture_scatterguard_positions_if_unset(
-            self.aperture_scatterguard
-        )
 
 
 def create_devices(context: BlueskyContext) -> RotationScanComposite:
@@ -364,7 +355,6 @@ def rotation_scan(
         @bpp.stage_decorator([eiger])
         @bpp.finalize_decorator(lambda: _cleanup_plan(composite))
         def rotation_with_cleanup_and_stage(params: RotationScan):
-            assert composite.aperture_scatterguard.aperture_positions is not None
             LOGGER.info("setting up sample environment...")
             yield from begin_sample_environment_setup(
                 composite.detector_motion,
@@ -390,7 +380,6 @@ def multi_rotation_scan(
         oav_params = OAVParameters(context="xrayCentring")
     eiger: EigerDetector = composite.eiger
     eiger.set_detector_parameters(parameters.detector_params)
-    assert composite.aperture_scatterguard.aperture_positions is not None
     LOGGER.info("setting up sample environment...")
     yield from begin_sample_environment_setup(
         composite.detector_motion,
