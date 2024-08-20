@@ -370,7 +370,7 @@ def set_aperture_for_bbox_size(
     new_selected_aperture = (
         AperturePosition.MEDIUM if bbox_size[0] < 2 else AperturePosition.LARGE
     )
-    gda_name = aperture_device._loaded_positions[new_selected_aperture].GDA_name
+    gda_name = aperture_device.get_gda_name_for_position(new_selected_aperture)
     LOGGER.info(
         f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
     )
