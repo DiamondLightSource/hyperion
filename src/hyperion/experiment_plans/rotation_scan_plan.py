@@ -21,6 +21,9 @@ from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.undulator import Undulator
 from dodal.devices.zebra import RotationDirection, Zebra
 from dodal.plans.check_topup import check_topup_and_wait_if_necessary
+from mx_bluesky.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_zocalo,
+)
 
 from hyperion.device_setup_plans.manipulate_sample import (
     begin_sample_environment_setup,
@@ -31,7 +34,6 @@ from hyperion.device_setup_plans.manipulate_sample import (
 )
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
-    read_hardware_for_zocalo,
     read_hardware_pre_collection,
 )
 from hyperion.device_setup_plans.setup_zebra import (

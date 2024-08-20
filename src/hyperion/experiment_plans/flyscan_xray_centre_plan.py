@@ -45,13 +45,15 @@ from dodal.devices.zocalo.zocalo_results import (
     get_processing_result,
 )
 from dodal.plans.check_topup import check_topup_and_wait_if_necessary
+from mx_bluesky.device_setup_plans.read_hardware_for_setup import (
+    read_hardware_for_zocalo,
+)
 from ophyd_async.panda import HDFPanda
 from scanspec.core import AxesPoints, Axis
 
 from hyperion.device_setup_plans.manipulate_sample import move_x_y_z
 from hyperion.device_setup_plans.read_hardware_for_setup import (
     read_hardware_during_collection,
-    read_hardware_for_zocalo,
     read_hardware_pre_collection,
 )
 from hyperion.device_setup_plans.setup_panda import (

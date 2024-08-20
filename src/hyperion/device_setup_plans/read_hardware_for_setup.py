@@ -52,9 +52,3 @@ def read_hardware_during_collection(
     yield from bps.read(dcm.energy_in_kev)
     yield from bps.read(detector.bit_depth)
     yield from bps.save()
-
-
-def read_hardware_for_zocalo(detector: EigerDetector):
-    yield from bps.create(name=CONST.DESCRIPTORS.ZOCALO_HW_READ)
-    yield from bps.read(detector.odin.file_writer.id)
-    yield from bps.save()
