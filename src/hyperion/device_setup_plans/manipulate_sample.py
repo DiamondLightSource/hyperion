@@ -55,8 +55,7 @@ def move_aperture_if_required(
         )
 
     else:
-        assert aperture_scatterguard.aperture_positions
-        aperture_position = aperture_scatterguard.aperture_positions.get_position_from_gda_aperture_name(
+        aperture_position = aperture_scatterguard.get_position_from_gda_aperture_name(
             aperture_position_gda_name
         )
         LOGGER.info(f"Setting aperture position to {aperture_position}")

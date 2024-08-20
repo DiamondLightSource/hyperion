@@ -8,11 +8,7 @@ import pytest
 import pytest_asyncio
 from bluesky.run_engine import RunEngine
 from dodal.beamlines import i03
-from dodal.common.beamlines.beamline_parameters import (
-    BEAMLINE_PARAMETER_PATHS,
-    GDABeamlineParameters,
-)
-from dodal.devices.aperturescatterguard import AperturePositions
+from dodal.devices.aperturescatterguard import AperturePosition
 from dodal.devices.smargon import Smargon
 from ophyd.sim import NullStatus
 from ophyd_async.core import set_mock_value
@@ -103,17 +99,8 @@ async def fxc_composite():
     await composite.robot.barcode._backend.put("ABCDEFGHIJ")  # type: ignore
     composite.dcm.energy_in_kev.user_readback.sim_put(12.345)  # type: ignore
 
-    gda_beamline_parameters = GDABeamlineParameters.from_file(
-        BEAMLINE_PARAMETER_PATHS["i03"]
-    )
-
-    aperture_positions = AperturePositions.from_gda_beamline_params(
-        gda_beamline_parameters
-    )
-    composite.aperture_scatterguard.load_aperture_positions(aperture_positions)
-    await composite.aperture_scatterguard._set_raw_unsafe(
-        aperture_positions.LARGE.location
-    )
+    large = composite.aperture_scatterguard._loaded_positions[AperturePosition.LARGE]
+    await composite.aperture_scatterguard._set_raw_unsafe(large.location)
     composite.eiger.cam.manual_trigger.put("Yes")
     composite.eiger.odin.check_odin_initialised = lambda: (True, "")
     composite.eiger.stage = MagicMock(return_value=NullStatus())
@@ -141,7 +128,9 @@ def test_read_hardware_pre_collection(
         yield from read_hardware_pre_collection(
             undulator=u, synchrotron=s, s4_slit_gaps=g, robot=r, smargon=sm
         )
-        yield from read_hardware_during_collection(ap_sg, a, f, dcm)
+        yield from read_hardware_during_collection(
+            ap_sg, a, f, dcm, fxc_composite.eiger
+        )
 
     RE(
         read_run(
