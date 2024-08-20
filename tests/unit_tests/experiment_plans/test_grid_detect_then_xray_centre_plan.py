@@ -7,7 +7,7 @@ from bluesky import Msg
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.beamlines import i03
-from dodal.devices.aperturescatterguard import AperturePosition
+from dodal.devices.aperturescatterguard import ApertureInOut, AperturePosition
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.oav.oav_detector import OAVConfigParams
@@ -150,7 +150,9 @@ async def test_detect_grid_and_do_gridscan(
         )
 
         # Check aperture was changed to SMALL
-        mock_aperture_scatterguard.assert_called_once_with(AperturePosition.SMALL)
+        mock_aperture_scatterguard.assert_called_once_with(
+            (ApertureInOut.IN, AperturePosition.SMALL)
+        )
 
         # Check we called out to underlying fast grid scan plan
         mock_flyscan_xray_centre_plan.assert_called_once_with(ANY, ANY)
