@@ -51,9 +51,6 @@ from hyperion.external_interaction.callbacks.xray_centre.ispyb_callback import (
 from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import GridScanWithEdgeDetect, ThreeDGridScan
-from hyperion.utils.aperturescatterguard import (
-    load_default_aperture_scatterguard_positions_if_unset,
-)
 from hyperion.utils.context import device_composite_from_context
 
 
@@ -82,12 +79,6 @@ class GridDetectThenXRayCentreComposite:
     panda_fast_grid_scan: PandAFastGridScan
     robot: BartRobot
 
-    def __post_init__(self):
-        """Ensure that aperture positions are loaded whenever this class is created."""
-        load_default_aperture_scatterguard_positions_if_unset(
-            self.aperture_scatterguard
-        )
-
 
 def create_devices(context: BlueskyContext) -> GridDetectThenXRayCentreComposite:
     return device_composite_from_context(context, GridDetectThenXRayCentreComposite)
@@ -109,8 +100,6 @@ def detect_grid_and_do_gridscan(
     parameters: GridScanWithEdgeDetect,
     oav_params: OAVParameters,
 ):
-    assert composite.aperture_scatterguard.aperture_positions is not None
-
     snapshot_template = f"{parameters.detector_params.prefix}_{parameters.detector_params.run_number}_{{angle}}"
 
     grid_params_callback = GridDetectionCallback(composite.oav.parameters)

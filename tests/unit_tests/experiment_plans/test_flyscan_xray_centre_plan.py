@@ -13,6 +13,7 @@ from bluesky.simulators import assert_message_and_return_remaining
 from bluesky.utils import FailedStatus, Msg
 from dodal.beamlines import i03
 from dodal.common.beamlines.beamline_utils import clear_device
+from dodal.devices.aperturescatterguard import AperturePosition
 from dodal.devices.detector.det_dim_constants import (
     EIGER_TYPE_EIGER2_X_16M,
 )
@@ -64,7 +65,10 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
 from hyperion.log import ISPYB_LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
-from tests.conftest import RunEngineSimulator, create_dummy_scan_spec
+from tests.conftest import (
+    RunEngineSimulator,
+    create_dummy_scan_spec,
+)
 
 from ...system_tests.external_interaction.conftest import (
     TEST_RESULT_LARGE,
@@ -244,7 +248,7 @@ class TestFlyscanXrayCentrePlan:
         RE(
             bps.abs_set(
                 fake_fgs_composite.aperture_scatterguard,
-                fake_fgs_composite.aperture_scatterguard.aperture_positions.LARGE,  # type: ignore
+                AperturePosition.LARGE,
             )
         )
 
@@ -353,16 +357,11 @@ class TestFlyscanXrayCentrePlan:
             )
         )
 
-        assert (
-            fgs_composite_with_panda_pcap.aperture_scatterguard.aperture_positions
-            is not None
-        )
-        ap_call_large = call(
-            fgs_composite_with_panda_pcap.aperture_scatterguard.aperture_positions.LARGE.location
-        )
-        ap_call_medium = call(
-            fgs_composite_with_panda_pcap.aperture_scatterguard.aperture_positions.MEDIUM.location
-        )
+        aperture_scatterguard = fgs_composite_with_panda_pcap.aperture_scatterguard
+        large = aperture_scatterguard._loaded_positions[AperturePosition.LARGE]
+        medium = aperture_scatterguard._loaded_positions[AperturePosition.MEDIUM]
+        ap_call_large = call(large.location)
+        ap_call_medium = call(medium.location)
 
         move_aperture.assert_has_calls(
             [ap_call_large, ap_call_large, ap_call_medium], any_order=True

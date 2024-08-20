@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import AperturePositions, ApertureScatterguard
+from dodal.devices.aperturescatterguard import AperturePosition, ApertureScatterguard
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
@@ -208,7 +208,8 @@ async def test_full_rotation_plan_smargon_settings(
     assert await smargon.z.user_readback.get_value() == params.z_start_um / 1000  # type: ignore
     assert (
         # 4 * snapshots, restore omega, 1 * rotation sweep
-        omega_set.call_count == 4 + 1 + 1
+        omega_set.call_count
+        == 4 + 1 + 1
     )
     # 1 to max vel in outer plan, 1 to max vel in setup_oav_snapshot_plan, 1 set before rotation, 1 restore in cleanup plan
     assert omega_velocity_set.call_count == 4
@@ -227,10 +228,9 @@ async def test_rotation_plan_moves_aperture_correctly(
     aperture_scatterguard: ApertureScatterguard = (
         run_full_rotation_plan.aperture_scatterguard
     )
-    assert aperture_scatterguard.aperture_positions
     assert (
         await aperture_scatterguard.get_current_aperture_position()
-        == aperture_scatterguard.aperture_positions.SMALL
+        == aperture_scatterguard._loaded_positions[AperturePosition.SMALL]
     )
 
 
@@ -422,7 +422,7 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == AperturePositions.SMALL
+        and msg.args[0] == AperturePosition.SMALL
         and msg.kwargs["group"] == "setup_senv",
     )
     msgs = assert_message_and_return_remaining(
@@ -509,7 +509,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == AperturePositions.ROBOT_LOAD
+        and msg.args[0] == AperturePosition.ROBOT_LOAD
         and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_GROUP,
     )
     msgs = assert_message_and_return_remaining(

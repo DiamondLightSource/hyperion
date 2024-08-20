@@ -12,8 +12,8 @@ import numpy as np
 from attr import dataclass
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.aperturescatterguard import (
+    AperturePosition,
     ApertureScatterguard,
-    SingleAperturePosition,
 )
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -72,9 +72,6 @@ from hyperion.log import LOGGER
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.gridscan import ThreeDGridScan
 from hyperion.tracing import TRACER
-from hyperion.utils.aperturescatterguard import (
-    load_default_aperture_scatterguard_positions_if_unset,
-)
 from hyperion.utils.context import device_composite_from_context
 
 
@@ -108,12 +105,6 @@ class FlyScanXRayCentreComposite:
     def sample_motors(self) -> Smargon:
         """Convenience alias with a more user-friendly name"""
         return self.smargon
-
-    def __post_init__(self):
-        """Ensure that aperture positions are loaded whenever this class is created."""
-        load_default_aperture_scatterguard_positions_if_unset(
-            self.aperture_scatterguard
-        )
 
 
 def create_devices(context: BlueskyContext) -> FlyScanXRayCentreComposite:
@@ -376,13 +367,10 @@ def set_aperture_for_bbox_size(
     bbox_size: list[int] | np.ndarray,
 ):
     # bbox_size is [x,y,z], for i03 we only care about x
-    assert aperture_device.aperture_positions is not None
-
-    new_selected_aperture: SingleAperturePosition = (
-        aperture_device.aperture_positions.MEDIUM
-        if bbox_size[0] < 2
-        else aperture_device.aperture_positions.LARGE
+    new_selected_aperture = (
+        AperturePosition.MEDIUM if bbox_size[0] < 2 else AperturePosition.LARGE
     )
+    gda_name = aperture_device._loaded_positions[new_selected_aperture].GDA_name
     LOGGER.info(
         f"Setting aperture to {new_selected_aperture} based on bounding box size {bbox_size}."
     )
@@ -391,7 +379,7 @@ def set_aperture_for_bbox_size(
     @bpp.run_decorator(
         md={
             "subplan_name": "change_aperture",
-            "aperture_size": new_selected_aperture.GDA_name,
+            "aperture_size": gda_name,
         }
     )
     def set_aperture():
