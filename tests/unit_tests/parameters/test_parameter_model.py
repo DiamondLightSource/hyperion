@@ -22,7 +22,7 @@ def minimal_3d_gridscan_params():
         "y_start_um": 0.777,
         "z_start_um": 0.05,
         "parameter_model_version": "5.0.0",
-        "visit": "cm12345",
+        "visit": "cm12345-12",
         "file_name": "test_file_name",
         "y2_start_um": 2,
         "z2_start_um": 2,
@@ -53,7 +53,7 @@ def test_serialise_deserialise(minimal_3d_gridscan_params):
     serialised = json.loads(test_params.json())
     deserialised = ThreeDGridScan(**serialised)
     assert deserialised.demand_energy_ev is None
-    assert deserialised.visit == "cm12345"
+    assert deserialised.visit == "cm12345-12"
     assert deserialised.x_start_um == 0.123
 
 
@@ -76,7 +76,7 @@ def test_robot_load_then_centre_params():
     params = {
         "parameter_model_version": "5.0.0",
         "sample_id": 123456,
-        "visit": "cm12345",
+        "visit": "cm12345-12",
         "file_name": "file_name",
         "storage_directory": "/tmp/dls/i03/data/2024/cm31105-4/xraycentring/123456/",
     }
