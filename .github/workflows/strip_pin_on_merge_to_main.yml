@@ -1,0 +1,24 @@
+name: Remove pins from dodal & mx-bluesky
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  approved:
+    if: github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove mx-bluesky pin hash
+        run: sed -i 's/mx-bluesky.git@[0-9a-f ]*$/mx-bluesky.git/' setup.cfg
+
+      - name: Remove dodal pin hash
+        run: sed -i 's/dodal.git@[0-9a-f ]*$/dodal.git/' setup.cfg
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: David Perl
+          author_email: david.perl@diamond.ac.uk
+          message: 'Remove pin hashes from dodal & mx-bluesky'
