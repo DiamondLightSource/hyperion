@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../dodal"
+		},
+		{
+			"path": "../../mx-bluesky"
+		}
+	],
+	"settings": {
+		"python.languageServer": "Pylance",
+		"terminal.integrated.gpuAcceleration": "off",
+		"esbonio.sphinx.confDir": "",
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter"
+		},
+		"python.formatting.provider": "none",
+		"python.analysis.enablePytestExtra": false
+	}
+}
