@@ -12,6 +12,7 @@ import numpy as np
 from attr import dataclass
 from blueapi.core import BlueskyContext, MsgGenerator
 from dodal.devices.aperturescatterguard import (
+    ApertureInOut,
     AperturePosition,
     ApertureScatterguard,
 )
@@ -383,7 +384,9 @@ def set_aperture_for_bbox_size(
         }
     )
     def set_aperture():
-        yield from bps.abs_set(aperture_device, new_selected_aperture)
+        yield from bps.abs_set(
+            aperture_device, (ApertureInOut.IN, new_selected_aperture)
+        )
 
     yield from set_aperture()
 

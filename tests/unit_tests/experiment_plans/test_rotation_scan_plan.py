@@ -7,7 +7,11 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.aperturescatterguard import AperturePosition, ApertureScatterguard
+from dodal.devices.aperturescatterguard import (
+    ApertureInOut,
+    AperturePosition,
+    ApertureScatterguard,
+)
 from dodal.devices.backlight import BacklightPosition
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
@@ -422,7 +426,7 @@ def test_rotation_scan_moves_aperture_in_backlight_out_after_snapshots_before_ro
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == AperturePosition.SMALL
+        and msg.args[0] == (ApertureInOut.IN, AperturePosition.SMALL)
         and msg.kwargs["group"] == "setup_senv",
     )
     msgs = assert_message_and_return_remaining(
@@ -509,7 +513,7 @@ def test_rotation_snapshot_setup_called_to_move_backlight_in_aperture_out_before
         msgs,
         lambda msg: msg.command == "set"
         and msg.obj.name == "aperture_scatterguard"
-        and msg.args[0] == AperturePosition.ROBOT_LOAD
+        and msg.args[0] == (ApertureInOut.OUT, None)
         and msg.kwargs["group"] == OAV_SNAPSHOT_SETUP_GROUP,
     )
     msgs = assert_message_and_return_remaining(
