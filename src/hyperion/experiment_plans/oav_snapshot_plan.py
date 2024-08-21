@@ -8,9 +8,9 @@ from dodal.devices.backlight import Backlight, BacklightPosition
 from dodal.devices.oav.oav_detector import OAV
 from dodal.devices.oav.oav_parameters import OAVParameters
 from dodal.devices.smargon import Smargon
-from mx_bluesky.parameters import WithSnapshot
 
 from hyperion.device_setup_plans.setup_oav import setup_general_oav_params
+from hyperion.parameters.components import WithSnapshot
 from hyperion.parameters.constants import DocDescriptorNames
 
 OAV_SNAPSHOT_SETUP_GROUP = "oav_snapshot_setup"
