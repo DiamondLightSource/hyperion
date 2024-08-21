@@ -11,14 +11,6 @@ from dodal.devices.fast_grid_scan import (
     PandAGridScanParams,
     ZebraGridScanParams,
 )
-from mx_bluesky.parameters import (
-    IspybExperimentType,
-    OptionalGonioAngleStarts,
-    SplitScan,
-    WithOavCentring,
-    WithScan,
-    XyzStarts,
-)
 from pydantic import Field, PrivateAttr
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line, Static
@@ -26,14 +18,21 @@ from scanspec.specs import Line, Static
 from hyperion.external_interaction.ispyb.ispyb_dataclass import (
     GridscanIspybParams,
 )
-from hyperion.parameters.components import DiffractionExperimentWithSample
+from hyperion.parameters.components import (
+    DiffractionExperimentWithSample,
+    IspybExperimentType,
+    OptionalGonioAngleStarts,
+    SplitScan,
+    WithOavCentring,
+    WithScan,
+    XyzStarts,
+)
 from hyperion.parameters.constants import CONST, I03Constants
 
 
 class GridCommon(
     DiffractionExperimentWithSample, OptionalGonioAngleStarts, WithOavCentring
 ):
-    oav_centring_file: str = Field(default=CONST.I03.OAV_CENTRING_FILE)
     grid_width_um: float = Field(default=CONST.PARAM.GRIDSCAN.WIDTH_UM)
     exposure_time_s: float = Field(default=CONST.PARAM.GRIDSCAN.EXPOSURE_TIME_S)
     use_roi_mode: bool = Field(default=CONST.PARAM.GRIDSCAN.USE_ROI)

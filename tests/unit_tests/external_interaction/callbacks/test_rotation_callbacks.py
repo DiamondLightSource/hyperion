@@ -11,7 +11,6 @@ from dodal.devices.attenuator import Attenuator
 from dodal.devices.eiger import EigerDetector
 from dodal.devices.flux import Flux
 from event_model import RunStart
-from mx_bluesky.parameters import IspybExperimentType
 from ophyd.sim import make_fake_device
 from ophyd_async.core import DeviceCollector, set_mock_value
 
@@ -39,6 +38,7 @@ from hyperion.external_interaction.ispyb.ispyb_store import (
     IspybIds,
     StoreInIspyb,
 )
+from hyperion.parameters.components import IspybExperimentType
 from hyperion.parameters.constants import CONST
 from hyperion.parameters.rotation import RotationScan
 
