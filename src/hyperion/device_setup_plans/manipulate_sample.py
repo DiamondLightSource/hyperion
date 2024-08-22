@@ -54,7 +54,7 @@ def move_aperture_if_required(
             aperture_position_gda_name
         )
     else:
-        aperture_position = AperturePosition.LARGE
+        aperture_position = DEFAULT_APERTURE_POSITION
         LOGGER.info(
             f"No aperture position requested. Defaulting to {DEFAULT_APERTURE_POSITION}"
         )
