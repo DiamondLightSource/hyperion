@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import bluesky.plan_stubs as bps
 from dodal.devices.aperturescatterguard import (
+    AperturePosition,
     AperturePositionGDANames,
     ApertureScatterguard,
 )
@@ -13,6 +14,7 @@ from dodal.devices.smargon import Smargon
 from hyperion.log import LOGGER
 
 LOWER_DETECTOR_SHUTTER_AFTER_SCAN = True
+DEFAULT_APERTURE_POSITION = AperturePosition.LARGE
 
 
 def begin_sample_environment_setup(
@@ -47,23 +49,22 @@ def move_aperture_if_required(
     aperture_position_gda_name: AperturePositionGDANames | None,
     group="move_aperture",
 ):
-    if not aperture_position_gda_name:
-        previous_aperture_position = yield from bps.rd(aperture_scatterguard)
-        assert isinstance(previous_aperture_position, dict)
-        LOGGER.info(
-            f"Using previously set aperture position {previous_aperture_position['name']}"
-        )
-
-    else:
+    if aperture_position_gda_name:
         aperture_position = aperture_scatterguard.get_position_from_gda_aperture_name(
             aperture_position_gda_name
         )
-        LOGGER.info(f"Setting aperture position to {aperture_position}")
-        yield from bps.abs_set(
-            aperture_scatterguard,
-            aperture_position,
-            group=group,
+    else:
+        aperture_position = AperturePosition.LARGE
+        LOGGER.info(
+            f"No aperture position requested. Defaulting to {DEFAULT_APERTURE_POSITION}"
         )
+
+    LOGGER.info(f"Setting aperture position to {aperture_position}")
+    yield from bps.abs_set(
+        aperture_scatterguard,
+        aperture_position,
+        group=group,
+    )
 
 
 def cleanup_sample_environment(
