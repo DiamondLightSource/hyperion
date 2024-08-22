@@ -14,8 +14,7 @@ from dodal.devices.detector.det_dist_to_beam_converter import (
 from dodal.devices.zebra import (
     RotationDirection,
 )
-from dodal.log import LOGGER
-from pydantic import Field, root_validator, validator
+from pydantic import Field, root_validator
 from scanspec.core import AxesPoints
 from scanspec.core import Path as ScanPath
 from scanspec.specs import Line
@@ -51,6 +50,9 @@ class RotationExperiment(DiffractionExperimentWithSample):
     ispyb_experiment_type: IspybExperimentType = Field(
         default=IspybExperimentType.ROTATION
     )
+    selected_aperture: AperturePositionGDANames | None = Field(
+        default=DEFAULT_APERTURE_POSITION
+    )
 
     def _detector_params(self, omega_start_deg: float):
         self.det_dist_to_beam_converter_path = (
@@ -80,18 +82,6 @@ class RotationExperiment(DiffractionExperimentWithSample):
             ),
             **optional_args,
         )
-
-    @validator("selected_aperture")
-    def _set_default_aperture_position(
-        cls, aperture_position: AperturePositionGDANames | None
-    ):
-        if not aperture_position:
-            LOGGER.warn(
-                f"No aperture position selected. Defaulting to {DEFAULT_APERTURE_POSITION}"
-            )
-            return DEFAULT_APERTURE_POSITION
-        else:
-            return aperture_position
 
 
 class RotationScan(WithScan, RotationScanPerSweep, RotationExperiment):
