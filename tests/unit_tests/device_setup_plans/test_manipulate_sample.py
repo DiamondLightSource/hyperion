@@ -18,7 +18,6 @@ from hyperion.device_setup_plans.manipulate_sample import move_aperture_if_requi
         (AperturePositionGDANames.MEDIUM_APERTURE, AperturePosition.MEDIUM),
         (AperturePositionGDANames.ROBOT_LOAD, AperturePosition.ROBOT_LOAD),
         (AperturePositionGDANames.LARGE_APERTURE, AperturePosition.LARGE),
-        (None, AperturePosition.LARGE),  # Default to large
     ],
 )
 async def test_move_aperture_goes_to_correct_position(

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+from dodal.devices.aperturescatterguard import AperturePositionGDANames
 from pydantic import ValidationError
 
 from hyperion.parameters.gridscan import (
@@ -110,3 +111,12 @@ def test_osc_is_used():
         params = RotationScan(**raw_params)
         assert params.rotation_increment_deg == osc
         assert params.num_images == int(params.scan_width_deg / osc)
+
+
+def test_selected_aperture_uses_default():
+    raw_params = raw_params_from_file(
+        "tests/test_data/parameter_json_files/good_test_rotation_scan_parameters.json"
+    )
+    raw_params["selected_aperture"] = None
+    params = RotationScan(**raw_params)
+    assert params.selected_aperture == AperturePositionGDANames.LARGE_APERTURE
