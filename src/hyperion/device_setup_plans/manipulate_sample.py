@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import bluesky.plan_stubs as bps
 from dodal.devices.aperturescatterguard import (
+    ApertureInOut,
     AperturePositionGDANames,
     ApertureScatterguard,
 )
@@ -61,7 +62,7 @@ def move_aperture_if_required(
         LOGGER.info(f"Setting aperture position to {aperture_position}")
         yield from bps.abs_set(
             aperture_scatterguard,
-            aperture_position,
+            (ApertureInOut.IN, aperture_position),
             group=group,
         )
 

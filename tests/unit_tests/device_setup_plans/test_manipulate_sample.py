@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from bluesky.run_engine import RunEngine
 from dodal.devices.aperturescatterguard import (
+    ApertureInOut,
     AperturePosition,
     AperturePositionGDANames,
     ApertureScatterguard,
@@ -19,9 +20,7 @@ async def test_move_aperture_goes_to_correct_position(
                 aperture_scatterguard, AperturePositionGDANames.LARGE_APERTURE
             )
         )
-        mock_set.assert_called_once_with(
-            AperturePosition.LARGE,
-        )
+        mock_set.assert_called_once_with((ApertureInOut.IN, AperturePosition.LARGE))
 
 
 async def test_move_aperture_does_nothing_when_none_selected(

@@ -2,7 +2,7 @@ import random
 import types
 from pathlib import Path
 from typing import Tuple
-from unittest.mock import DEFAULT, MagicMock, call, patch
+from unittest.mock import ANY, DEFAULT, MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -238,7 +238,7 @@ class TestFlyscanXrayCentrePlan:
             "name": "Small",
             "GDA_name": "SMALL_APERTURE",
             "radius_microns": 20,
-            "location": (10, 11, 2, 13, 14),
+            "location": ANY,
         }
         fake_fgs_composite.s4_slit_gaps.xgap.user_readback.sim_put(xgap_test_value)  # type: ignore
         fake_fgs_composite.s4_slit_gaps.ygap.user_readback.sim_put(ygap_test_value)  # type: ignore

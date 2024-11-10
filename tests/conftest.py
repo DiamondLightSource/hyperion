@@ -21,11 +21,9 @@ from dodal.common.beamlines.beamline_parameters import (
 )
 from dodal.common.beamlines.beamline_utils import clear_devices
 from dodal.devices.aperturescatterguard import (
-    ApertureFiveDimensionalLocation,
+    ApertureConfigData,
     AperturePosition,
     ApertureScatterguard,
-    ApertureScatterguardTolerances,
-    SingleAperturePosition,
 )
 from dodal.devices.attenuator import Attenuator
 from dodal.devices.backlight import Backlight
@@ -186,7 +184,7 @@ def pass_on_mock(motor, call_log: MagicMock | None = None):
 
 
 def patch_async_motor(
-    motor: Motor, initial_position=0, call_log: MagicMock | None = None
+    motor: Motor, initial_position: float = 0, call_log: MagicMock | None = None
 ):
     set_mock_value(motor.user_setpoint, initial_position)
     set_mock_value(motor.user_readback, initial_position)
@@ -451,45 +449,16 @@ def thawer(RE) -> Generator[Thawer, Any, Any]:
 
 
 @pytest.fixture
-def aperture_scatterguard(RE):
-    positions = {
-        AperturePosition.LARGE: SingleAperturePosition(
-            location=ApertureFiveDimensionalLocation(0, 1, 2, 3, 4),
-            name="Large",
-            GDA_name="LARGE_APERTURE",
-            radius_microns=100,
-        ),
-        AperturePosition.MEDIUM: SingleAperturePosition(
-            location=ApertureFiveDimensionalLocation(5, 6, 2, 8, 9),
-            name="Medium",
-            GDA_name="MEDIUM_APERTURE",
-            radius_microns=50,
-        ),
-        AperturePosition.SMALL: SingleAperturePosition(
-            location=ApertureFiveDimensionalLocation(10, 11, 2, 13, 14),
-            name="Small",
-            GDA_name="SMALL_APERTURE",
-            radius_microns=20,
-        ),
-        AperturePosition.ROBOT_LOAD: SingleAperturePosition(
-            location=ApertureFiveDimensionalLocation(15, 16, 2, 18, 19),
-            name="Robot_load",
-            GDA_name="ROBOT_LOAD",
-            radius_microns=None,
-        ),
-    }
+def aperture_scatterguard(RE, beamline_parameters):
     with patch(
-        "dodal.beamlines.i03.load_positions_from_beamline_parameters",
-        return_value=positions,
-    ), patch(
-        "dodal.beamlines.i03.load_tolerances_from_beamline_params",
-        return_value=ApertureScatterguardTolerances(0.1, 0.1, 0.1, 0.1, 0.1),
+        "dodal.beamlines.i03.ApertureConfigData",
+        return_value=ApertureConfigData(beamline_parameters),
     ):
         ap_sg = i03.aperture_scatterguard(fake_with_ophyd_sim=True)
     with (
         patch_async_motor(ap_sg._aperture.x),
         patch_async_motor(ap_sg._aperture.y),
-        patch_async_motor(ap_sg._aperture.z, 2),
+        patch_async_motor(ap_sg._aperture.z, 15.8),
         patch_async_motor(ap_sg._scatterguard.x),
         patch_async_motor(ap_sg._scatterguard.y),
     ):
